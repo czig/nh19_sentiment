@@ -14,6 +14,8 @@ import warnings
 import sqlalchemy
 import string
 from sqlalchemy import create_engine
+import re
+
 warnings.filterwarnings("ignore")
 sns.set(font_scale=1.5)
 sns.set_style("whitegrid")
@@ -30,7 +32,7 @@ nh_df = sentiment_df[sentiment_df['page']=='AFSOUTHNewHorizons']
 
 #generating/cleaning text
 text_list = sentiment_df.message.tolist()
-text_np = [comment.translate(str.maketrans('','',string.punctuation)) for comment in text_list] #deleting punctuation
+text_np = [re.sub(r'[^\w\s]','',comment) for comment in text_list] #deleting punctuation
 text = [comment.lower().split() for comment in text_np] #lower case all words, split into list of lists
 text_nsw = [[word for word in comment_words if not word in stop_words] for comment_words in text] #removing stop words
 
