@@ -5,9 +5,6 @@ from PIL import Image
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 from sqlalchemy import create_engine
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-import __builtin__
-import io
-__builtin__.open = io.open
 
 import matplotlib.pyplot as plt
 
@@ -46,7 +43,7 @@ for index,row in filtered_df.iterrows():
     sentiment = {}
     sentiment['comment'] = row['message']
     sentiment['post'] = row['post_message']
-    sentiment['analysis'] = sid.polarity_scores(row['message'].encode('utf-8'))
+    sentiment['analysis'] = sid.polarity_scores(row['message'])
     filtered_df.at[index,'pos'] = sentiment['analysis']['pos'] 
     filtered_df.at[index,'neg'] = sentiment['analysis']['neg'] 
     filtered_df.at[index,'neu'] = sentiment['analysis']['neu'] 
@@ -64,3 +61,4 @@ print(page_stats.describe())
 print(page_stats.mean())
 
 filtered_df.to_sql('CommentSentiment',con=out_engine,if_exists="replace")
+filtered_df.to_excel('Output.xlsx')

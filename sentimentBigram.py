@@ -39,7 +39,7 @@ terms_bigram = [list(bigrams(comments)) for comments in text_nsw] #creating bigr
 
 bigrams = list(itertools.chain(*terms_bigram))
 bigram_counts = collections.Counter(bigrams)#counting how many of each bigram shows up
-bigram_df = pd.DataFrame(bigram_counts.most_common(20), columns = ['bigram', 'count']) #creating dataframe of x most bigrams
+bigram_df = pd.DataFrame(bigram_counts.most_common(54), columns = ['bigram', 'count']) #creating dataframe of x most bigrams
 print(bigram_df) #show the dataframe
 
 #Graphing network digram
@@ -53,6 +53,7 @@ fig,ax = plt.subplots(figsize=(10,8))
 pos = nx.spring_layout(G,k=1)
 
 nx.draw_networkx(G,pos,font_size=16,width=3,edge_color='grey',node_color='purple',with_labels=False,ax=ax)
+plt.title('Overall Facebook Bigram Diagram')
 
 #labelling diagram
 for key, value in pos.items():

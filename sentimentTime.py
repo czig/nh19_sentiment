@@ -26,8 +26,7 @@ working_df.created_time = pd.to_datetime(sentiment_df.created_time)
 #working_df = working_df.set_index('created_time')
 #working_df = working_df.groupby(['time_series'], as_index = False).mean()
 working_df = working_df.groupby(pd.Grouper(key='created_time', freq='W-MON')).mean().reset_index()
-print(working_df.columns)
-print(working_df)
+#print(working_df)
 #
 ##Create data frame from non-null rows
 plot_df = working_df.fillna(0)
