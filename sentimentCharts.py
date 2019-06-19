@@ -1,8 +1,5 @@
 import pandas as pd
 import numpy as np
-from os import path
-from PIL import Image
-from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 from sqlalchemy import create_engine
 
 import matplotlib.pyplot as plt
