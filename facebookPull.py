@@ -4,8 +4,8 @@ from sqlalchemy import create_engine
 
 engine = create_engine('sqlite:///./nh19_fb.db')
 
-#add 'dpiguyana' to list of pages
-page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana']
+#add 'NewsSourceGuyana'?
+page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern']
 access_token = 'EAAI4BG12pyIBADCni60YQaBwZCsTP3lki7dY73ZCn8YZAUT3FrwNkC6iRpP7qu2palZBMGnFjrEG8RIyPhUYQ4gjZBnPNKYRFdskfny5dZAZCxzEZA7OxnmwyoV0NQ1bPO9RedcJYrPMyjbbh7FfAPDyIQiZB35th5uRpPH1s9s2PXZCaEJ2MChQYB'
 
 graph = facebook.GraphAPI(access_token=access_token,version=3.1)
