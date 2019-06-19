@@ -61,3 +61,4 @@ print(page_stats.describe())
 print(page_stats.mean())
 
 filtered_df.to_sql('CommentSentiment',con=out_engine,if_exists="replace")
+filtered_df.to_excel('Output.xlsx')
