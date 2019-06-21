@@ -4,19 +4,36 @@ from sqlalchemy import create_engine
 
 engine = create_engine('sqlite:///./nh19_fb.db')
 
-#add 'NewsSourceGuyana'?
-page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern']
-access_token = 'EAAI4BG12pyIBADCni60YQaBwZCsTP3lki7dY73ZCn8YZAUT3FrwNkC6iRpP7qu2palZBMGnFjrEG8RIyPhUYQ4gjZBnPNKYRFdskfny5dZAZCxzEZA7OxnmwyoV0NQ1bPO9RedcJYrPMyjbbh7FfAPDyIQiZB35th5uRpPH1s9s2PXZCaEJ2MChQYB'
+page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle']
+
+with open('./access_token.txt','r') as token_file:
+    access_token = token_file.read().replace('\n','')
 
 graph = facebook.GraphAPI(access_token=access_token,version=3.1)
 
+#function for getting reactions for object (superceded)
 def get_all_reactions(object_id):
-    likes = graph.request(object_id + '?fields=reactions.type(LIKE).limit(0).summary(total_count)')['reactions']['summary']['total_count']
-    loves = graph.request(object_id + '?fields=reactions.type(LOVE).limit(0).summary(total_count)')['reactions']['summary']['total_count']
-    wows = graph.request(object_id + '?fields=reactions.type(WOW).limit(0).summary(total_count)')['reactions']['summary']['total_count']
-    sads = graph.request(object_id + '?fields=reactions.type(SAD).limit(0).summary(total_count)')['reactions']['summary']['total_count']
-    angrys = graph.request(object_id + '?fields=reactions.type(ANGRY).limit(0).summary(total_count)')['reactions']['summary']['total_count']
+    reactions = graph.request(object_id + '?fields=reactions.type(LIKE).limit(0).summary(total_count).as(reactions_likes),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_loves),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wows),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sads),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angrys)')
+    likes = reactions['reactions_likes']['summary']['total_count']
+    loves = reactions['reactions_loves']['summary']['total_count']
+    wows = reactions['reactions_wows']['summary']['total_count']
+    sads = reactions['reactions_sads']['summary']['total_count']
+    angrys = reactions['reactions_angrys']['summary']['total_count']
     return likes, loves, wows, sads, angrys
+
+#subroutine to add reactions to object and abide by previous convention
+def add_reactions(dict_object):
+    dict_object['likes'] = dict_object['reactions_likes']['summary']['total_count'] 
+    dict_object['loves'] = dict_object['reactions_loves']['summary']['total_count'] 
+    dict_object['wows'] = dict_object['reactions_wows']['summary']['total_count'] 
+    dict_object['sads'] = dict_object['reactions_sads']['summary']['total_count'] 
+    dict_object['angrys'] = dict_object['reactions_angrys']['summary']['total_count'] 
+    dict_object.pop('reactions_likes', None)
+    dict_object.pop('reactions_loves', None)
+    dict_object.pop('reactions_wows', None)
+    dict_object.pop('reactions_sads', None)
+    dict_object.pop('reactions_angrys', None)
+
 
 def handle_message_tags(fb_object,parent_type,tag_list):
     if 'message_tags' in fb_object:
@@ -32,68 +49,62 @@ def handle_message_tags(fb_object,parent_type,tag_list):
 
 def pull_data(page_id):
     #initialize
-    feed_gen = graph.get_all_connections(id=page_id, connection_name='feed',fields="id,created_time,message,message_tags,parent_id,shares")
+    print(page_id)
+    reactions_string = "reactions.type(LIKE).limit(0).summary(total_count).as(reactions_likes),reactions.type(LOVE).limit(0).summary(total_count).as(reactions_loves),reactions.type(WOW).limit(0).summary(total_count).as(reactions_wows),reactions.type(SAD).limit(0).summary(total_count).as(reactions_sads),reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angrys)"
+    feed_gen = graph.get_all_connections(id=page_id, connection_name='feed',fields="id,created_time,message,message_tags,parent_id,shares," + reactions_string + ",comments{id,message,message_tags,created_time," + reactions_string + ",comment_count,comments{id,message,message_tags,created_time,comment_count," + reactions_string + "}}")
     feed = []
     all_comments = []
     all_message_tags = []
     #pull post data
     for post in feed_gen:
         if post[u'created_time'] > '2018-08-01':
-            #handle information relating to post specifically
+            #handle information relating to post specifically (each post is a dict)
             print(post[u'created_time'])
-            likes,loves,wows,sads,angrys = get_all_reactions(post[u'id'])
-            post['likes'] = likes
-            post['loves'] = loves
-            post['wows'] = wows
-            post['sads'] = sads
-            post['angrys'] = angrys
             post[u'shares'] = post['shares']['count'] if 'shares' in post else 0
             post['page'] = page_id
+            # add reactions to post dict and remove default nested dicts
+            add_reactions(post)
+            # handle comments on post (if any exist)
+            if 'comments' in post.keys():
+                #comments is a list of comments
+                post['comments'] = post['comments']['data']
+                for comment in post['comments']:
+                    #keep track of parent and master page
+                    comment[u'parent'] = comment[u'parent'][u'id'] if u'parent' in comment else ""
+                    comment['parent_id'] = post[u'id']
+                    comment['parent_type'] = 'post'
+                    comment['page'] = page_id
+                    # add reactions to comment dict and remove default nested dicts
+                    add_reactions(comment)
+                    #handle comments on comments (nested comments) (if any exist)
+                    if 'comments' in comment.keys():
+                        comment['comments'] = comment['comments']['data']
+                        for nested_comment in comment['comments']:
+                            # keep track of parent and page
+                            nested_comment[u'parent'] = nested_comment[u'parent'][u'id'] if u'parent' in nested_comment else ""
+                            nested_comment['parent_id'] = comment[u'id']
+                            nested_comment['parent_type'] = 'comment'
+                            nested_comment['page'] = page_id
+                            # add reactions to nested comment dict and remove default nested dicts
+                            add_reactions(nested_comment)
+                            # handle message tags
+                            handle_message_tags(nested_comment,'comment',all_message_tags)
+                            # add nested comment to list 
+                            all_comments.append(nested_comment)
+                        #remove comments key/property once all nested comments have been appended to master list
+                        comment.pop('comments', None)
+
+                    # handle message tags
+                    handle_message_tags(comment,'comment',all_message_tags)
+                    # add comment to list 
+                    all_comments.append(comment)
+                #remove comments key/property once all comments have been appended to master list
+                post.pop('comments', None)
 
             #handle message tags
             handle_message_tags(post,'post',all_message_tags)
-
+            # add post to list 
             feed.append(post)
-
-            #handle comments
-            comments = graph.get_connections(id=post[u'id'], connection_name='comments', fields="id,message,like_count,message_tags,parent,created_time,comment_count")[u'data']
-            for comment in comments:
-                #keep track of parent and master page
-                comment[u'parent'] = comment[u'parent'][u'id'] if u'parent' in comment else ""
-                comment['parent_id'] = post[u'id']
-                comment['parent_type'] = 'post'
-                comment['page'] = page_id
-                #get comment reactions
-                likes,loves,wows,sads,angrys = get_all_reactions(comment[u'id'])
-                comment['likes'] = likes
-                comment['loves'] = loves
-                comment['wows'] = wows
-                comment['sads'] = sads
-                comment['angrys'] = angrys
-                #handle nested comments (if any exist)
-                if comment[u'comment_count'] > 0:
-                    nested_comments = graph.get_connections(id=comment[u'id'], connection_name='comments', fields="id,message,like_count,message_tags,parent,created_time,comment_count")[u'data'] 
-                    for nested_comment in nested_comments:
-                        nested_comment[u'parent'] = nested_comment[u'parent'][u'id'] if u'parent' in nested_comment else ""
-                        nested_comment['parent_id'] = comment[u'id']
-                        nested_comment['parent_type'] = 'comment'
-                        nested_comment['page'] = page_id
-                        #get comment reactions
-                        likes,loves,wows,sads,angrys = get_all_reactions(nested_comment[u'id'])
-                        nested_comment['likes'] = likes
-                        nested_comment['loves'] = loves
-                        nested_comment['wows'] = wows
-                        nested_comment['sads'] = sads
-                        nested_comment['angrys'] = angrys
-                        # handle message tags
-                        handle_message_tags(nested_comment,'comment',all_message_tags)
-
-                        all_comments.append(nested_comment)
-
-                # handle message tags
-                handle_message_tags(comment,'comment',all_message_tags)
-
-                all_comments.append(comment)
 
         else:
             break
