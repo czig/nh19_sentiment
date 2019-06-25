@@ -81,12 +81,6 @@ embassy_text = " ".join(embassy_tokens)
 southcom_text = " ".join(southcom_tokens)
 nh_text = " ".join(nh_tokens)
 
-num_words = 10
-all_freq = dict(Counter(all_tokens).most_common(num_words))
-embassy_freq = dict(Counter(embassy_tokens).most_common(num_words))
-southcom_freq = dict(Counter(southcom_tokens).most_common(num_words))
-nh_freq = dict(Counter(nh_tokens).most_common(num_words))
-
 #TODO: keep collocations? normalize plurals or not??
 wordcloud = WordCloud(width=1000, height=600, background_color="white", collocations=False, normalize_plurals=False).generate(all_text)
 wordcloud2 = WordCloud(width = 1000, height=600, background_color="white", collocations=False, normalize_plurals=False).generate(embassy_text)
@@ -131,27 +125,6 @@ plt.figure(5)
 plt.imshow(wordcloud4, interpolation='bilinear')
 plt.axis("off")
 plt.title('NH Facebook Word Cloud', fontsize = 36)
-
-#Word frequency plots
-plt.figure(6)
-plt.bar(all_freq.keys(), all_freq.values())
-plt.ylabel("Frequency")
-plt.title('Overall Word Frequency', fontsize = 36)
-
-plt.figure(7)
-plt.bar(embassy_freq.keys(), embassy_freq.values())
-plt.ylabel("Frequency")
-plt.title('Embassy Word Frequency', fontsize = 36)
-
-plt.figure(8)
-plt.bar(southcom_freq.keys(), southcom_freq.values())
-plt.ylabel("Frequency")
-plt.title('SOUTHCOM Word Frequency', fontsize = 36)
-
-plt.figure(9)
-plt.bar(nh_freq.keys(), nh_freq.values())
-plt.ylabel("Frequency")
-plt.title('NH Word Frequency', fontsize = 36)
 
 plt.show()
 
