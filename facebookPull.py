@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 
 engine = create_engine('sqlite:///./nh19_fb.db')
 
-page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle']
+page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
 
 with open('./access_token.txt','r') as token_file:
     access_token = token_file.read().replace('\n','')
@@ -57,7 +57,7 @@ def pull_data(page_id):
     all_message_tags = []
     #pull post data
     for post in feed_gen:
-        if post[u'created_time'] > '2018-08-01':
+        if post[u'created_time'] > '2016-05-19':
             #handle information relating to post specifically (each post is a dict)
             print(post[u'created_time'])
             post[u'shares'] = post['shares']['count'] if 'shares' in post else 0
