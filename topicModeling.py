@@ -126,10 +126,10 @@ corpus = [dictionary.doc2bow(doc) for doc in docs_list]
 NUM_TOPICS = 10
 ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word = dictionary, passes=15)
 
-topics = ldamodel.print_topics(num_words=10)
+topics = ldamodel.print_topics(num_words=30)
 for topic in topics:
     print(topic)
 
 #visualize topics
 vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
-pyLDAvis.save_html(vis, 'lda_vis.html')
+pyLDAvis.save_html(vis, 'lda_vis_{0}_{1}.html'.format(args.type,args.date))
