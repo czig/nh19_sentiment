@@ -3,6 +3,7 @@ import pandas as pd
 import nltk
 from nltk.corpus import stopwords
 import re
+import unicodedata
 from sqlalchemy import create_engine
 from gensim import corpora
 import gensim
@@ -30,8 +31,18 @@ def tokenize(messages_list, parser):
     docs_list = []
     for message in messages_list:
         lda_tokens = []
+        #convert unicode punctuation to regular ascii punctuation 
+        message = message.replace(chr(8216),"'")
+        message = message.replace(chr(8217),"'")
+        message = message.replace(chr(8218),",")
+        message = message.replace(chr(8220),'"')
+        message = message.replace(chr(8221),'"')
+        message = message.replace(chr(8242),'`')
+        message = message.replace(chr(8245),'`')
+        #convert remaining unicode characters to closest ascii character
+        message = unicodedata.normalize('NFKD',message).encode('ascii','ignore').decode('utf-8')
         #part of speech to include
-        allowed_pos = ['NOUN','ADJ','VERB','ADV','PROPN']
+        allowed_pos = ['NOUN','VERB','PROPN']
         #unicode for 's (right apostrophie followed by s)
         possessive_substr = chr(8217) + 's'
         message_tokens = parser(message)
@@ -61,8 +72,14 @@ def tokenize(messages_list, parser):
             #remove unnecessary parts of speech (also removes space and punctuation)
             elif token.pos_ not in allowed_pos:
                 continue
+            elif token.text in ['lol']:
+                continue
             else:
                 lda_tokens.append(token.lemma_)
+                if token.lemma_ in ['not']:
+                    print('Text, Lemma, POS, Tag: ',token.text, token.lemma_, token.pos_, token.tag_)
+                    for char in token.lemma_:
+                        print(char,ord(char))
 
         docs_list.append(lda_tokens)
 
