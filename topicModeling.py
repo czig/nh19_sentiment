@@ -7,7 +7,25 @@ import unicodedata
 from sqlalchemy import create_engine
 from gensim import corpora
 import gensim
-#import pyLDAvis.gensim
+import pyLDAvis
+import pyLDAvis.gensim
+import matplotlib.pyplot as plt
+import warnings
+
+#import argument parser
+import argparse
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument("--type", help="Specify whether to use posts or comments", choices=['posts','comments'], default='comments')
+arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD", default="2019-04-01")
+arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
+args = arg_parser.parse_args()
+
+#read off input values
+if args.ignore:
+    print('Ignoring all warnings...')
+    warnings.filterwarnings("ignore")
+print("Using %s for analysis" % args.type)
+print("Using start_date of: ",args.date)
 
 #import spacy
 import spacy
@@ -20,11 +38,21 @@ for word in stop_words:
 
 #read SQL database
 engine = create_engine('sqlite:///./nh19_fb.db')
-posts = pd.read_sql("""select * from posts where created_time > '2019-04-01'""",engine)
-comments = pd.read_sql("""select * from comments where created_time > '2019-04-01'""",engine)
+posts = pd.read_sql("""select * from posts 
+                       where created_time > '{0}' and 
+                       page != 'AFSouthNewHorizons' and 
+                       page != 'southcom' and
+                       page != 'AFSouthern'""".format(args.date), engine)
+comments = pd.read_sql("""select * from comments 
+                          where created_time > '{0}' and
+                          page != 'AFSouthNewHorizons' and 
+                          page != 'southcom' and
+                          page != 'AFSouthern'""".format(args.date), engine)
 
 posts_list = posts[posts['message'].notnull()].message.to_list()
 comments_list = comments[comments['message'].notnull()].message.to_list()
+print('Number of posts:',len(posts_list))
+print('Number of comments:',len(comments_list))
 
 #tokenize and clean posts
 def tokenize(messages_list, parser):
@@ -72,21 +100,23 @@ def tokenize(messages_list, parser):
             #remove unnecessary parts of speech (also removes space and punctuation)
             elif token.pos_ not in allowed_pos:
                 continue
-            elif token.text in ['lol']:
+            elif token.text in ['lol','READ','MORE','NEWS']:
                 continue
             else:
                 lda_tokens.append(token.lemma_)
-                if token.lemma_ in ['not']:
+                if token.text == "READ":
                     print('Text, Lemma, POS, Tag: ',token.text, token.lemma_, token.pos_, token.tag_)
-                    for char in token.lemma_:
-                        print(char,ord(char))
+                    print(message_tokens)
 
         docs_list.append(lda_tokens)
 
     return docs_list
 
 #tokenize here
-docs_list = tokenize(comments_list, parser)
+if args.type == 'comments':
+    docs_list = tokenize(comments_list, parser)
+else:
+    docs_list = tokenize(posts_list, parser)
 
 #begin lda
 dictionary = corpora.Dictionary(docs_list)
@@ -96,10 +126,10 @@ corpus = [dictionary.doc2bow(doc) for doc in docs_list]
 NUM_TOPICS = 10
 ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word = dictionary, passes=15)
 
-topics = ldamodel.print_topics(num_words=10)
+topics = ldamodel.print_topics(num_words=30)
 for topic in topics:
     print(topic)
 
 #visualize topics
-#lda_display = pyLDAvis.gensim.prepare(ldamodel, corpus, dictionary)
-#pyLDAvis.display(lda_display)
+vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
+pyLDAvis.save_html(vis, 'lda_vis_{0}_{1}.html'.format(args.type,args.date))
