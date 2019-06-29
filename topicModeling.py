@@ -12,10 +12,15 @@ import pyLDAvis.gensim
 import matplotlib.pyplot as plt
 import warnings
 
+#do logging as dictated by gensim
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
 #import argument parser
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments", choices=['posts','comments'], default='comments')
+arg_parser.add_argument("--num_topics", help="Number of topics", type=int, default=10)
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD", default="2019-04-01")
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
 args = arg_parser.parse_args()
@@ -23,7 +28,7 @@ args = arg_parser.parse_args()
 #read off input values
 if args.ignore:
     print('Ignoring all warnings...')
-    warnings.filterwarnings("ignore")
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
 print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.date)
 
@@ -40,14 +45,10 @@ for word in stop_words:
 engine = create_engine('sqlite:///./nh19_fb.db')
 posts = pd.read_sql("""select * from posts 
                        where created_time > '{0}' and 
-                       page != 'AFSouthNewHorizons' and 
-                       page != 'southcom' and
-                       page != 'AFSouthern'""".format(args.date), engine)
+                       page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.date), engine)
 comments = pd.read_sql("""select * from comments 
-                          where created_time > '{0}' and
-                          page != 'AFSouthNewHorizons' and 
-                          page != 'southcom' and
-                          page != 'AFSouthern'""".format(args.date), engine)
+                           where created_time > '{0}' and 
+                           page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.date), engine)
 
 posts_list = posts[posts['message'].notnull()].message.to_list()
 comments_list = comments[comments['message'].notnull()].message.to_list()
@@ -102,11 +103,10 @@ def tokenize(messages_list, parser):
                 continue
             elif token.text in ['lol','READ','MORE','NEWS']:
                 continue
+            elif token.lemma_ in ['say','man']:
+                continue
             else:
-                lda_tokens.append(token.lemma_)
-                if token.text == "READ":
-                    print('Text, Lemma, POS, Tag: ',token.text, token.lemma_, token.pos_, token.tag_)
-                    print(message_tokens)
+                lda_tokens.append(token.lemma_.lower())
 
         docs_list.append(lda_tokens)
 
@@ -123,10 +123,9 @@ dictionary = corpora.Dictionary(docs_list)
 corpus = [dictionary.doc2bow(doc) for doc in docs_list]
 
 #run lda topic modelling
-NUM_TOPICS = 10
-ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word = dictionary, passes=15)
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, id2word = dictionary, update_every=0, passes=100)
 
-topics = ldamodel.print_topics(num_words=30)
+topics = ldamodel.print_topics(num_words=14)
 for topic in topics:
     print(topic)
 
