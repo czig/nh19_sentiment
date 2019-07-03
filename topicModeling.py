@@ -1,3 +1,4 @@
+import os.path
 import numpy as np
 import pandas as pd
 import nltk
@@ -11,10 +12,15 @@ import pyLDAvis
 import pyLDAvis.gensim
 import matplotlib.pyplot as plt
 import warnings
+import pickle
+
+#custom file import
+from dbLogger import *
 
 #do logging as dictated by gensim
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logger = logging.getLogger()
 
 #import argument parser
 import argparse
@@ -23,7 +29,12 @@ arg_parser.add_argument("--type", help="Specify whether to use posts or comments
 arg_parser.add_argument("--num_topics", help="Number of topics", type=int, default=10)
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD", default="2019-04-01")
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
+arg_parser.add_argument("--logs", help="If supplied, only do logs and don't generate visualization", action="store_true")
 args = arg_parser.parse_args()
+
+dictionary_name = "./tmp/dict_fb_onlyGuy_{0}_{1}.dict".format(args.type,args.date)
+corpus_name = "./tmp/corpus_fb_onlyGuy_{0}_{1}.mm".format(args.type,args.date)
+docs_name = "./tmp/doc_fb_onlyGuy_{0}_{1}.pkl".format(args.type,args.date)
 
 #read off input values
 if args.ignore:
@@ -54,6 +65,7 @@ posts_list = posts[posts['message'].notnull()].message.to_list()
 comments_list = comments[comments['message'].notnull()].message.to_list()
 print('Number of posts:',len(posts_list))
 print('Number of comments:',len(comments_list))
+
 
 #tokenize and clean posts
 def tokenize(messages_list, parser):
@@ -112,23 +124,59 @@ def tokenize(messages_list, parser):
 
     return docs_list
 
-#tokenize here
-if args.type == 'comments':
-    docs_list = tokenize(comments_list, parser)
+#check if dictionary and corpus are already saved
+if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.exists(docs_name):
+    #load dictionary and corpus
+    dictionary = corpora.Dictionary.load(dictionary_name)
+    corpus = corpora.MmCorpus(corpus_name)
+    with open(docs_name,'rb') as docs:
+        docs_list = pickle.load(docs)
 else:
-    docs_list = tokenize(posts_list, parser)
+    #build dicionary and corpus
+    #tokenize here
+    if args.type == 'comments':
+        docs_list = tokenize(comments_list, parser)
+    else:
+        docs_list = tokenize(posts_list, parser)
 
-#begin lda
-dictionary = corpora.Dictionary(docs_list)
-corpus = [dictionary.doc2bow(doc) for doc in docs_list]
+    #create dictionary and bag of words (corpus) for lda
+    dictionary = corpora.Dictionary(docs_list)
+    corpus = [dictionary.doc2bow(doc) for doc in docs_list]
+    #save for later
+    dictionary.save(dictionary_name)
+    corpora.MmCorpus.serialize(corpus_name, corpus)
+    with open(docs_name,'wb') as docs:
+        pickle.dump(docs_list, docs)
+
+#set variables (override defaults to enable custom logging in db)
+iterations = 50
+total_passes = 10
+update_every = 0
+chunksize = 2000
+alpha = 'auto'
+beta = None
+doc_size = len(corpus)
+dbLogger_inst = dbLogger()
+dbLogger_inst.set_values(args.num_topics, iterations, total_passes, update_every, chunksize, alpha, beta, args.type, args.date, doc_size)
+logger.addHandler(dbLogger_inst)
+
+#set callbacks
+convergence_callback = gensim.models.callbacks.ConvergenceMetric(logger='shell')
+coherence_callback = gensim.models.callbacks.CoherenceMetric(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='c_v', logger='shell')
+perplexity_callback = gensim.models.callbacks.PerplexityMetric(corpus=corpus, logger='shell')
+diff_callback = gensim.models.callbacks.DiffMetric(logger='shell')
 
 #run lda topic modelling
-ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, id2word = dictionary, update_every=0, passes=100)
+print('***************************************')
+print('Running LDA model on {0} from {1}'.format(args.type, args.date))
+print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunksize: {4}, alpha: {5}, beta: {6}'.format(args.num_topics, iterations, update_every, total_passes, chunksize, alpha, beta))
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=iterations, id2word = dictionary, update_every=update_every, passes=total_passes, chunksize=chunksize, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
-topics = ldamodel.print_topics(num_words=14)
-for topic in topics:
-    print(topic)
+if not args.logs:
+    topics = ldamodel.print_topics(num_words=14)
+    for topic in topics:
+        print(topic)
 
-#visualize topics
-vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
-pyLDAvis.save_html(vis, 'lda_vis_{0}_{1}.html'.format(args.type,args.date))
+    #visualize topics
+    vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
+    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}.html'.format(args.type,args.date))
