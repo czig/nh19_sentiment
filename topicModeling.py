@@ -13,6 +13,10 @@ import pyLDAvis.gensim
 import matplotlib.pyplot as plt
 import warnings
 import pickle
+import sys
+
+#set max recursion depth
+sys.setrecursionlimit(10000)
 
 #custom file import
 from dbLogger import *
