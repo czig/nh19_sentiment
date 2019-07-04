@@ -27,9 +27,14 @@ import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments", choices=['posts','comments'], default='comments')
 arg_parser.add_argument("--num_topics", help="Number of topics", type=int, default=10)
+arg_parser.add_argument("--num_passes", help="Number of passes", type=int, default=10)
+arg_parser.add_argument("--iterations", help="Number of iterations", type=int, default=50)
+arg_parser.add_argument("--chunk_size", help="Chunk Size", type=int, default=2000)
+arg_parser.add_argument("--update_every", help="Update every flag", type=int, default=0)
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD", default="2019-04-01")
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
 arg_parser.add_argument("--logs", help="If supplied, only do logs and don't generate visualization", action="store_true")
+arg_parser.add_argument("--name", help="Test name for tracking", type=str, default='sandbox')
 args = arg_parser.parse_args()
 
 dictionary_name = "./tmp/dict_fb_onlyGuy_{0}_{1}.dict".format(args.type,args.date)
@@ -149,15 +154,11 @@ else:
         pickle.dump(docs_list, docs)
 
 #set variables (override defaults to enable custom logging in db)
-iterations = 50
-total_passes = 10
-update_every = 0
-chunksize = 2000
 alpha = 'auto'
 beta = None
 doc_size = len(corpus)
 dbLogger_inst = dbLogger()
-dbLogger_inst.set_values(args.num_topics, iterations, total_passes, update_every, chunksize, alpha, beta, args.type, args.date, doc_size)
+dbLogger_inst.set_values(args.num_topics, args.iterations, args.num_passes, args.update_every, args.chunk_size, alpha, beta, args.type, args.date, doc_size, args.name)
 logger.addHandler(dbLogger_inst)
 
 #set callbacks
@@ -169,8 +170,8 @@ diff_callback = gensim.models.callbacks.DiffMetric(logger='shell')
 #run lda topic modelling
 print('***************************************')
 print('Running LDA model on {0} from {1}'.format(args.type, args.date))
-print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunksize: {4}, alpha: {5}, beta: {6}'.format(args.num_topics, iterations, update_every, total_passes, chunksize, alpha, beta))
-ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=iterations, id2word = dictionary, update_every=update_every, passes=total_passes, chunksize=chunksize, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
+print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunk_size: {4}, alpha: {5}, beta: {6}'.format(args.num_topics, args.iterations, args.update_every, args.num_passes, args.chunk_size, alpha, beta))
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
 if not args.logs:
     topics = ldamodel.print_topics(num_words=14)
