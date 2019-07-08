@@ -2,3 +2,6 @@
 *.db
 *.png
 access_token.txt
+tmp/
+lda_vis/
+__pycache__/
