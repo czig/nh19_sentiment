@@ -36,6 +36,14 @@ nh_comments = nh_df[nh_df['message'].notnull()].message.to_list()
 def tokenize(messages_list, parser):
     all_tokens = []
     for message in messages_list:
+        #convert unicode punctuation to regular ascii punctuation 
+        message = message.replace(chr(8216),"'")
+        message = message.replace(chr(8217),"'")
+        message = message.replace(chr(8218),",")
+        message = message.replace(chr(8220),'"')
+        message = message.replace(chr(8221),'"')
+        message = message.replace(chr(8242),'`')
+        message = message.replace(chr(8245),'`')
         #unicode for 's (right apostrophie followed by s)
         possessive_substr = chr(8217) + 's'
         message_tokens = parser(message)
@@ -63,11 +71,11 @@ def tokenize(messages_list, parser):
             elif len(token.text) < 2:
                 continue
             #remove pronouns
-            elif token.lemma_ == "-PRON-":
+            elif token.pos_ == "PRON":
                 continue
             else:
-                #TODO: use lemma or not??
-                all_tokens.append(token.lemma_)
+                #use raw text here to accurately represent what people are saying
+                all_tokens.append(token.text)
 
     return all_tokens
 
@@ -81,11 +89,11 @@ embassy_text = " ".join(embassy_tokens)
 southcom_text = " ".join(southcom_tokens)
 nh_text = " ".join(nh_tokens)
 
-#TODO: keep collocations? normalize plurals or not??
-wordcloud = WordCloud(width=1000, height=600, background_color="white", collocations=False, normalize_plurals=False).generate(all_text)
-wordcloud2 = WordCloud(width = 1000, height=600, background_color="white", collocations=False, normalize_plurals=False).generate(embassy_text)
-wordcloud3 = WordCloud(width = 1000, height=600, background_color="white", collocations=False, normalize_plurals=False).generate(southcom_text)
-wordcloud4 = WordCloud(width = 1000, height=600, background_color="white", collocations=False, normalize_plurals=False).generate(nh_text)
+#keep collocations to show bigrams (increases understanding) and remove plurals (bin a little better)
+wordcloud = WordCloud(width=1000, height=600, background_color="white", collocations=True, normalize_plurals=True).generate(all_text)
+wordcloud2 = WordCloud(width = 1000, height=600, background_color="white", collocations=True, normalize_plurals=True).generate(embassy_text)
+wordcloud3 = WordCloud(width = 1000, height=600, background_color="white", collocations=True, normalize_plurals=True).generate(southcom_text)
+wordcloud4 = WordCloud(width = 1000, height=600, background_color="white", collocations=True, normalize_plurals=True).generate(nh_text)
 
 #create subplot with all wordcloud
 fig,axs = plt.subplots(2,2,constrained_layout=True)

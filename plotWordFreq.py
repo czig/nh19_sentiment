@@ -33,6 +33,14 @@ nh_comments = nh_df[nh_df['message'].notnull()].message.to_list()
 def tokenize(messages_list, parser):
     all_tokens = []
     for message in messages_list:
+        #convert unicode punctuation to regular ascii punctuation 
+        message = message.replace(chr(8216),"'")
+        message = message.replace(chr(8217),"'")
+        message = message.replace(chr(8218),",")
+        message = message.replace(chr(8220),'"')
+        message = message.replace(chr(8221),'"')
+        message = message.replace(chr(8242),'`')
+        message = message.replace(chr(8245),'`')
         #unicode for 's (right apostrophie followed by s)
         possessive_substr = chr(8217) + 's'
         message_tokens = parser(message)
@@ -63,7 +71,7 @@ def tokenize(messages_list, parser):
             elif token.pos_ == "PRON":
                 continue
             else:
-                #TODO: use lemma or not??
+                #use lemma here to make charts more understandable/relevant
                 all_tokens.append(token.lemma_)
 
     return all_tokens
@@ -75,7 +83,7 @@ southcom_tokens = tokenize(southcom_comments, parser)
 nh_tokens = tokenize(nh_comments, parser)
 
 #number of bars in each chart
-num_words = 10
+num_words = 20
 
 #find counts for top n most common words
 all_freq = dict(Counter(all_tokens).most_common(num_words))
