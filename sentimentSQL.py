@@ -23,32 +23,50 @@ df = pd.read_sql("""select comm.*,
                       on comm.parent_id = post.id
                   where comm.message != "" """, engine)
 
+df['neg'] = 0.0
+df['neu'] = 0.0
+df['pos'] = 0.0
+df['compound'] = 0.0
+sentiments = []
+for index, row in df.iterrows():
+	sentiment = {}
+	sentiment['comment'] = row['message']
+	sentiment['post'] = row['post_message']
+	sentiment['analysis'] = sid.polarity_scores(row['message'])
+	df.at[index,'pos'] = sentiment['analysis']['pos']
+	df.at[index,'neg'] = sentiment['analysis']['neg']
+	df.at[index,'neu'] = sentiment['analysis']['neu']
+	df.at[index,'compound'] = sentiment['analysis']['compound']
+	sentiments.append(sentiment)
+
 #make different datasets for each page
 embassy_df = df[df['page'] == 'USEmbassyGeorgetown']
 southcom_df = df[df['page'] == 'southcom']
 nh_df = df[df['page'] == 'AFSOUTHNewHorizons']
+afsouth_df = df[df['page'] == 'AFSouthern']
+guyana_df =df[(df['page'] != 'USEmbassyGeorgetown')& (df['page'] != 'southcom') & (df['page'] != 'AFSOUTHNewHorizons') & (df['page'] != 'AFSouthern')]
 
 #filter embassy and southcom comments for new horizons
 embassyNh_df = embassy_df[(embassy_df['post_message'].str.contains("NH19|New Horizons|NewHorizons|Military",case=False,na=False)) | (embassy_df['message'].str.contains("NH19|New Horizons|NewHorizons|Military|USA|United States",case=False,na=False))]
 southcomNh_df = southcom_df[(southcom_df['post_message'].str.contains("NH19|New Horizons|NewHorizons|Guyana",case=False,na=False)) | (southcom_df['message'].str.contains("NH19|New Horizons|NewHorizons|Guyana",case=False,na=False))]
 
-filtered_df = pd.concat([embassyNh_df,southcomNh_df,nh_df])
-filtered_df['neg'] = 0.0
-filtered_df['neu'] = 0.0
-filtered_df['pos'] = 0.0
-filtered_df['compound'] = 0.0
+filtered_df = pd.concat([embassyNh_df,southcomNh_df,nh_df, afsouth_df, guyana_df])
+#filtered_df['neg'] = 0.0
+#filtered_df['neu'] = 0.0
+#filtered_df['pos'] = 0.0
+#filtered_df['compound'] = 0.0
 
-sentiments = []
-for index,row in filtered_df.iterrows():
-    sentiment = {}
-    sentiment['comment'] = row['message']
-    sentiment['post'] = row['post_message']
-    sentiment['analysis'] = sid.polarity_scores(row['message'])
-    filtered_df.at[index,'pos'] = sentiment['analysis']['pos'] 
-    filtered_df.at[index,'neg'] = sentiment['analysis']['neg'] 
-    filtered_df.at[index,'neu'] = sentiment['analysis']['neu'] 
-    filtered_df.at[index,'compound'] = sentiment['analysis']['compound'] 
-    sentiments.append(sentiment)
+#sentiments = []
+#for index,row in filtered_df.iterrows():
+#    sentiment = {}
+#    sentiment['comment'] = row['message']
+#    sentiment['post'] = row['post_message']
+#    sentiment['analysis'] = sid.polarity_scores(row['message'])
+#    filtered_df.at[index,'pos'] = sentiment['analysis']['pos'] 
+#    filtered_df.at[index,'neg'] = sentiment['analysis']['neg'] 
+#    filtered_df.at[index,'neu'] = sentiment['analysis']['neu'] 
+#    filtered_df.at[index,'compound'] = sentiment['analysis']['compound'] 
+#    sentiments.append(sentiment)
 
 
 print('embassy',len(embassyNh_df.index))

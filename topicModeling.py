@@ -124,7 +124,7 @@ corpus = [dictionary.doc2bow(doc) for doc in docs_list]
 
 #run lda topic modelling
 NUM_TOPICS = 10
-ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word = dictionary, passes=15)
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word = dictionary, passes=2015)
 
 topics = ldamodel.print_topics(num_words=30)
 for topic in topics:
