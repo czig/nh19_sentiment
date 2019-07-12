@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments", choices=['posts','comments'], default='comments')
+arg_parser.add_argument("--pages", help="Specify whether to use all facebook pages, only US facebook pages, or only Guyana faebook pages", choices=['all','us','guy'], default='us')
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD", default="2019-04-01")
 args = arg_parser.parse_args()
 
@@ -25,7 +26,14 @@ for word in guy_stop_words:
     guy_parser.vocab[word.lower()].is_stop = True
 
 #pages used for facebook pull
-page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
+if args.pages == 'all':
+    page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
+elif args.pages == 'us':
+    page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','AFSouthern']
+elif args.pages == 'guy':
+    page_ids = ['dpiguyana','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
+
+#lookup for detemining correct parser
 page_to_parser = {
     'AFSOUTHNewHorizons': us_parser,
     'USEmbassyGeorgetown': us_parser,
@@ -52,19 +60,16 @@ page_to_parser = {
 engine = create_engine('sqlite:///./nh19_fb.db')
 
 #get all comments for this year
-sentiment_df = pd.read_sql("""select * from {0} where created_time > '{1}'""".format(args.type, args.date),engine)
+raw_df = pd.read_sql("""select * from {0} where created_time > '{1}'""".format(args.type, args.date),engine)
 
 #find date of most recent_comment
-connection = engine.connect()
-result = connection.execute("""select substr(max(created_time),1,10) from {0}""".format(args.type)) 
-for row in result:
-    most_recent_date = row[0]
-connection.close()
+relevant_pages = raw_df[raw_df['page'].isin(page_ids)]
+most_recent_date = relevant_pages.created_time.max()[:10]
 
 #filter for page and store list of comments in 
 page_comments = {} 
 for pageid in page_ids:
-    tmp_df = sentiment_df[sentiment_df['page'] == pageid]
+    tmp_df = raw_df[raw_df['page'] == pageid]
     page_comments[pageid] = tmp_df[tmp_df['message'].notnull()].message.to_list()
 
 #tokenize and clean posts
@@ -117,6 +122,7 @@ def tokenize(messages_list, parser):
 #get list of tokens
 page_tokens = {}
 for page in page_comments: 
+    print('Tokenizing {0} {1} from {2}'.format(len(page_comments[page]), args.type, page))
     page_tokens[page] = tokenize(page_comments[page], page_to_parser[page])
     
 #number of bars in each chart
