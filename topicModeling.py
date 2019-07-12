@@ -8,12 +8,14 @@ import unicodedata
 from sqlalchemy import create_engine
 from gensim import corpora
 import gensim
+from gensim.models import Phrases
 import pyLDAvis
 import pyLDAvis.gensim
 import matplotlib.pyplot as plt
 import warnings
 import pickle
 import sys
+from pprint import pprint
 
 #set max recursion depth
 sys.setrecursionlimit(10000)
@@ -23,7 +25,7 @@ from dbLogger import *
 
 #do logging as dictated by gensim
 import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 logger = logging.getLogger()
 
 #import argument parser
@@ -131,6 +133,12 @@ def tokenize(messages_list, parser):
 
         docs_list.append(lda_tokens)
 
+    bigram = Phrases(docs_list, min_count=20)
+    for idx in range(len(docs_list)):
+        for token in bigram[docs_list[idx]]:
+            if '_' in token:
+                docs_list[idx].append(token)
+
     return docs_list
 
 #check if dictionary and corpus are already saved
@@ -148,8 +156,9 @@ else:
     else:
         docs_list = tokenize(posts_list, parser)
 
-    #create dictionary and bag of words (corpus) for lda
+    #create and filter dictionary and create and bag of words (corpus) for lda
     dictionary = corpora.Dictionary(docs_list)
+    dictionary.filter_extremes(no_below=20, no_above=0.5)
     corpus = [dictionary.doc2bow(doc) for doc in docs_list]
     #save for later
     dictionary.save(dictionary_name)
@@ -157,9 +166,13 @@ else:
     with open(docs_name,'wb') as docs:
         pickle.dump(docs_list, docs)
 
+#log number of unique tokens and number of documents
+print('Number of unique tokens: %d' % len(dictionary))
+print('Number of documents: %d' % len(corpus))
+
 #set variables (override defaults to enable custom logging in db)
 alpha = 'auto'
-beta = None
+beta = 'auto' 
 doc_size = len(corpus)
 dbLogger_inst = dbLogger()
 dbLogger_inst.set_values(args.num_topics, args.iterations, args.num_passes, args.update_every, args.chunk_size, alpha, beta, args.type, args.date, doc_size, args.name)
@@ -175,13 +188,40 @@ diff_callback = gensim.models.callbacks.DiffMetric(logger='shell')
 print('***************************************')
 print('Running LDA model on {0} from {1}'.format(args.type, args.date))
 print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunk_size: {4}, alpha: {5}, beta: {6}'.format(args.num_topics, args.iterations, args.update_every, args.num_passes, args.chunk_size, alpha, beta))
-ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, eval_every=1, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
 if not args.logs:
-    topics = ldamodel.print_topics(num_words=14)
-    for topic in topics:
+    topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='c_v')
+    avg_topic_coherence = sum([t[1] for t in topics]) / args.num_topics
+    print('average topic coherence: %.4f' % avg_topic_coherence)
+    #print topics to terminal 
+    pprint(topics)
+    #build plot for each topic coherence
+    topic_coherences = [topic[1] for topic in topics]
+    plt.figure(0)
+    plt.plot(topic_coherences)
+    plt.ylabel('Coherence')
+    #build plot for first 10 topics topic (show word distribution)
+    for i,topic in enumerate(topics):
+        #topic is a tuple, with first element list of tuples and second element topic coherence
+        topic_coherence = topic[1]
+        words = [element[1] for element in topic[0]]
+        coherences = [element[0] for element in topic[0]]
+        if i < 10:
+            plt.figure(i+1)
+            plt.bar(words, coherences)
+            plt.xticks(rotation=40, ha='right')
+            plt.subplots_adjust(bottom=0.3)
+            plt.ylabel("Probability")
+            plt.title('Topic #{0}, coherence: {1}'.format(i, round(topic_coherence,3)), fontsize=24)
+
+    plt.show()
+        
+    #print topics in order of significance
+    sig_topics = ldamodel.print_topics(num_topics=-1)
+    for topic in sig_topics:
         print(topic)
 
     #visualize topics
     vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
-    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}.html'.format(args.type,args.date))
+    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}topics.html'.format(args.type,args.date,args.num_topics))
