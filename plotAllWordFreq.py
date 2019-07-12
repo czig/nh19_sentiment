@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 #allow use of arguments
 import argparse
 arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument("--type", help="Specify whether to use posts or comments", choices=['posts','comments'], default='comments')
-arg_parser.add_argument("--pages", help="Specify whether to use all facebook pages, only US facebook pages, or only Guyana faebook pages", choices=['all','us','guy'], default='us')
-arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD", default="2019-04-01")
+arg_parser.add_argument("--type", help="Specify whether to use posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
+arg_parser.add_argument("--pages", help="Specify whether to use all facebook pages, only US facebook pages, or only Guyana faebook pages. Default is us", choices=['all','us','guy'], default='us')
+arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
 args = arg_parser.parse_args()
 
 #import spacy and make separate parsers for US pages and Guyana pages
@@ -124,6 +124,9 @@ page_tokens = {}
 for page in page_comments: 
     print('Tokenizing {0} {1} from {2}'.format(len(page_comments[page]), args.type, page))
     page_tokens[page] = tokenize(page_comments[page], page_to_parser[page])
+
+#combine all tokens for overall chart
+all_tokens = [token for page in page_tokens for token in page_tokens[page]]
     
 #number of bars in each chart
 num_words = 20
@@ -132,6 +135,9 @@ num_words = 20
 page_word_freq = {} 
 for page in page_tokens:
     page_word_freq[page] = dict(Counter(page_tokens[page]).most_common(num_words))
+
+#get overall word count for overall chart
+all_word_freq = dict(Counter(all_tokens).most_common(num_words))
 
 #Word frequency plots
 for i,page in enumerate(page_word_freq):
@@ -142,5 +148,14 @@ for i,page in enumerate(page_word_freq):
     plt.ylabel("Frequency")
     plt.title('{0} Word Frequency, {1} - {2}'.format(page, args.date, most_recent_date), fontsize = 20)
     plt.savefig('./wordFreqPlots/{0}_{1}_freq_{2}_to_{3}.png'.format(page,args.type,args.date,most_recent_date))
+
+#overall word frequency plot
+plt.figure(len(page_word_freq)+1)
+plt.bar(all_word_freq.keys(), all_word_freq.values())
+plt.xticks(rotation=40, ha='right')
+plt.subplots_adjust(bottom=0.3)
+plt.ylabel("Frequency")
+plt.title('Overall {0} Word Frequency, {1} - {2}'.format(args.pages.upper(), args.date, most_recent_date), fontsize = 20)
+plt.savefig('./wordFreqPlots/overall_{0}_{1}_freq_{2}_to_{3}.png'.format(args.pages,args.type,args.date,most_recent_date))
 
 plt.show()
