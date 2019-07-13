@@ -3,6 +3,7 @@ import numpy as np
 from sqlalchemy import create_engine
 from collections import Counter
 import matplotlib.pyplot as plt
+from tokenizer import *
 
 #allow use of arguments
 import argparse
@@ -12,18 +13,13 @@ arg_parser.add_argument("--pages", help="Specify whether to use all facebook pag
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
 args = arg_parser.parse_args()
 
-#import spacy and make separate parsers for US pages and Guyana pages
-import spacy
-us_parser = spacy.load('en_core_web_sm')
-guy_parser = spacy.load('en_core_web_sm')
+#stop words for both types of pages
 us_stop_words = ["Guyana","Guyanese","USA","United","States","US","America","Military","Ambassador"]
 guy_stop_words = ["Guyana","Guyanese"]
-for word in us_stop_words:
-    us_parser.vocab[word].is_stop = True
-    us_parser.vocab[word.lower()].is_stop = True
-for word in guy_stop_words:
-    guy_parser.vocab[word].is_stop = True
-    guy_parser.vocab[word.lower()].is_stop = True
+
+#define and instantiate tokenizers
+us_tokenizer = Tokenizer(stop_words=us_stop_words, case_sensitive=False, remove_pos=["PRON"])
+guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, remove_pos=["PRON"])
 
 #pages used for facebook pull
 if args.pages == 'all':
@@ -33,27 +29,28 @@ elif args.pages == 'us':
 elif args.pages == 'guy':
     page_ids = ['dpiguyana','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
 
-#lookup for detemining correct parser
-page_to_parser = {
-    'AFSOUTHNewHorizons': us_parser,
-    'USEmbassyGeorgetown': us_parser,
-    'southcom': us_parser,
-    'dpiguyana': guy_parser,
-    'AFSouthern': us_parser,
-    'NewsSourceGuyana': guy_parser,
-    '655452691211411': guy_parser,
-    'kaieteurnewsonline': guy_parser,
-    'demwaves': guy_parser,
-    'CapitolNewsGY': guy_parser,
-    'PrimeNewsGuyana': guy_parser,
-    'INews.Guyana': guy_parser,
-    'stabroeknews': guy_parser,
-    'NCNGuyanaNews': guy_parser,
-    'dailynewsguyana': guy_parser,
-    'actionnewsguyana': guy_parser,
-    'gychronicle': guy_parser,
-    'gytimes': guy_parser,
-    'newsroomgy': guy_parser
+
+#lookup for detemining correct tokenizer 
+page_to_tokenizer = {
+    'AFSOUTHNewHorizons': us_tokenizer,
+    'USEmbassyGeorgetown': us_tokenizer,
+    'southcom': us_tokenizer,
+    'dpiguyana': guy_tokenizer,
+    'AFSouthern': us_tokenizer,
+    'NewsSourceGuyana': guy_tokenizer,
+    '655452691211411': guy_tokenizer,
+    'kaieteurnewsonline': guy_tokenizer,
+    'demwaves': guy_tokenizer,
+    'CapitolNewsGY': guy_tokenizer,
+    'PrimeNewsGuyana': guy_tokenizer,
+    'INews.Guyana': guy_tokenizer,
+    'stabroeknews': guy_tokenizer,
+    'NCNGuyanaNews': guy_tokenizer,
+    'dailynewsguyana': guy_tokenizer,
+    'actionnewsguyana': guy_tokenizer,
+    'gychronicle': guy_tokenizer,
+    'gytimes': guy_tokenizer,
+    'newsroomgy': guy_tokenizer
 }
 
 #connect to database
@@ -72,58 +69,12 @@ for pageid in page_ids:
     tmp_df = raw_df[raw_df['page'] == pageid]
     page_comments[pageid] = tmp_df[tmp_df['message'].notnull()].message.to_list()
 
-#tokenize and clean posts
-def tokenize(messages_list, parser):
-    all_tokens = []
-    for message in messages_list:
-        #convert unicode punctuation to regular ascii punctuation 
-        message = message.replace(chr(8216),"'")
-        message = message.replace(chr(8217),"'")
-        message = message.replace(chr(8218),",")
-        message = message.replace(chr(8220),'"')
-        message = message.replace(chr(8221),'"')
-        message = message.replace(chr(8242),'`')
-        message = message.replace(chr(8245),'`')
-        #unicode for 's (right apostrophie followed by s)
-        possessive_substr = chr(8217) + 's'
-        message_tokens = parser(message)
-        #iterate through all tokens in each post
-        for token in message_tokens:
-            #remove space
-            if token.orth_.isspace():
-                continue
-            #remove punctuation
-            elif token.is_punct:
-                continue
-            #remove urls
-            elif token.like_url:
-                continue
-            #remove emails
-            elif token.like_email:
-                continue
-            #remove stop words
-            elif token.is_stop:
-                continue
-            #remove 's
-            elif token.text.find(possessive_substr) > -1:
-                continue
-            #remove single letters
-            elif len(token.text) < 2:
-                continue
-            #remove pronouns
-            elif token.pos_ == "PRON":
-                continue
-            else:
-                #use lemma here to make charts more understandable/relevant
-                all_tokens.append(token.lemma_)
-
-    return all_tokens
 
 #get list of tokens
 page_tokens = {}
 for page in page_comments: 
     print('Tokenizing {0} {1} from {2}'.format(len(page_comments[page]), args.type, page))
-    page_tokens[page] = tokenize(page_comments[page], page_to_parser[page])
+    page_tokens[page] = page_to_tokenizer[page].tokenize(page_comments[page], return_docs=False)
 
 #combine all tokens for overall chart
 all_tokens = [token for page in page_tokens for token in page_tokens[page]]
