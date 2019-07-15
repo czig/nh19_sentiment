@@ -17,9 +17,12 @@ args = arg_parser.parse_args()
 us_stop_words = ["Guyana","Guyanese","USA","United","States","US","America","Military","Ambassador"]
 guy_stop_words = ["Guyana","Guyanese"]
 
+#stop lemmas for guyana pages
+guy_stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come"]
+
 #define and instantiate tokenizers
 us_tokenizer = Tokenizer(stop_words=us_stop_words, case_sensitive=False, remove_pos=["PRON"])
-guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, remove_pos=["PRON"])
+guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, stop_lemmas=guy_stop_lemmas, remove_pos=["PRON"])
 
 #pages used for facebook pull
 if args.pages == 'all':

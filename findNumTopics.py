@@ -43,7 +43,7 @@ print("Using start_date of: ",args.date)
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
-stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana"]
+stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
