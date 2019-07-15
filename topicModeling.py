@@ -22,6 +22,7 @@ sys.setrecursionlimit(10000)
 
 #custom file import
 from dbLogger import *
+from tokenizer import *
 
 #do logging as dictated by gensim
 import logging
@@ -54,14 +55,15 @@ if args.ignore:
 print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.date)
 
-#import spacy
-import spacy
-parser = spacy.load('en_core_web_sm')
-
 #add stop words
-stop_words = ["Guyana","guyana","year","words","word"]
-for word in stop_words:
-    parser.vocab[word].is_stop = True
+stop_words = ["lol","READ","MORE","NEWS"]
+stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come"]
+
+#parts of speech
+allowed_pos = ['NOUN', 'VERB', 'PROPN']
+
+#define and instantiate tokenizer
+tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=True, allowed_pos=allowed_pos, lower_token=True, bigrams=True)
 
 #read SQL database
 engine = create_engine('sqlite:///./nh19_fb.db')
@@ -78,69 +80,6 @@ print('Number of posts:',len(posts_list))
 print('Number of comments:',len(comments_list))
 
 
-#tokenize and clean posts
-def tokenize(messages_list, parser):
-    docs_list = []
-    for message in messages_list:
-        lda_tokens = []
-        #convert unicode punctuation to regular ascii punctuation 
-        message = message.replace(chr(8216),"'")
-        message = message.replace(chr(8217),"'")
-        message = message.replace(chr(8218),",")
-        message = message.replace(chr(8220),'"')
-        message = message.replace(chr(8221),'"')
-        message = message.replace(chr(8242),'`')
-        message = message.replace(chr(8245),'`')
-        #convert remaining unicode characters to closest ascii character
-        message = unicodedata.normalize('NFKD',message).encode('ascii','ignore').decode('utf-8')
-        #part of speech to include
-        allowed_pos = ['NOUN','VERB','PROPN']
-        #unicode for 's (right apostrophie followed by s)
-        possessive_substr = chr(8217) + 's'
-        message_tokens = parser(message)
-        #iterate through all tokens in each post
-        for token in message_tokens:
-            #remove space
-            if token.orth_.isspace():
-                continue
-            #remove punctuation
-            elif token.is_punct:
-                continue
-            #remove urls
-            elif token.like_url:
-                continue
-            #remove emails
-            elif token.like_email:
-                continue
-            #remove stop words
-            elif token.is_stop:
-                continue
-            #remove 's
-            elif token.text.find(possessive_substr) > -1:
-                continue
-            #remove single letters
-            elif len(token.text) < 2:
-                continue
-            #remove unnecessary parts of speech (also removes space and punctuation)
-            elif token.pos_ not in allowed_pos:
-                continue
-            elif token.text in ['lol','READ','MORE','NEWS']:
-                continue
-            elif token.lemma_ in ['say','man']:
-                continue
-            else:
-                lda_tokens.append(token.lemma_.lower())
-
-        docs_list.append(lda_tokens)
-
-    bigram = Phrases(docs_list, min_count=20)
-    for idx in range(len(docs_list)):
-        for token in bigram[docs_list[idx]]:
-            if '_' in token:
-                docs_list[idx].append(token)
-
-    return docs_list
-
 #check if dictionary and corpus are already saved
 if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.exists(docs_name):
     #load dictionary and corpus
@@ -152,9 +91,9 @@ else:
     #build dicionary and corpus
     #tokenize here
     if args.type == 'comments':
-        docs_list = tokenize(comments_list, parser)
+        docs_list = tokenizer_inst.tokenize(comments_list)
     else:
-        docs_list = tokenize(posts_list, parser)
+        docs_list = tokenizer_inst.tokenize(posts_list)
 
     #create and filter dictionary and create and bag of words (corpus) for lda
     dictionary = corpora.Dictionary(docs_list)
