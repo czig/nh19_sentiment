@@ -18,14 +18,14 @@ us_stop_words = ["Guyana","Guyanese","USA","United","States","US","U.S.","Americ
 guy_stop_words = ["Guyana","Guyanese"]
 
 #stop lemmas for guyana pages
-guy_stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come"]
+guy_stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","lol"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
 
 #define and instantiate tokenizers
-us_tokenizer = Tokenizer(stop_words=us_stop_words, case_sensitive=False, remove_pos=["PRON"], allowed_pos=allowed_pos)
-guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, stop_lemmas=guy_stop_lemmas, remove_pos=["PRON"], allowed_pos=allowed_pos)
+us_tokenizer = Tokenizer(stop_words=us_stop_words, case_sensitive=False, allowed_pos=allowed_pos)
+guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, stop_lemmas=guy_stop_lemmas, allowed_pos=allowed_pos)
 
 #pages used for facebook pull
 if args.pages == 'all':

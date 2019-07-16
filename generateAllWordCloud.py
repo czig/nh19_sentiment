@@ -21,13 +21,16 @@ args = arg_parser.parse_args()
 us_stop_words = ["Guyana","Guyanese","USA","United","States","US","U.S.","America","Military","Ambassador","Air","Force"]
 guy_stop_words = ["Guyana","Guyanese"]
 
+#parts of speech
+allowed_pos = ['NOUN', 'VERB', 'PROPN']
+
 #stop lemmas for guyana pages
 us_stop_lemmas = ["de","lo","el","por","la","que","los","en","es","con"]
-guy_stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come"]
+guy_stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","lol"]
 
 #define and instantiate tokenizers
-us_tokenizer = Tokenizer(stop_words=us_stop_words, case_sensitive=False, stop_lemmas=us_stop_lemmas, remove_pos=["PRON"], lemma_token=False)
-guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, stop_lemmas=guy_stop_lemmas, remove_pos=["PRON"], lemma_token=False)
+us_tokenizer = Tokenizer(stop_words=us_stop_words, case_sensitive=False, stop_lemmas=us_stop_lemmas, allowed_pos=allowed_pos, lemma_token=False)
+guy_tokenizer = Tokenizer(stop_words=guy_stop_words, case_sensitive=False, stop_lemmas=guy_stop_lemmas, allowed_pos=allowed_pos, lemma_token=False)
 
 #pages used for facebook pull
 if args.pages == 'all':
