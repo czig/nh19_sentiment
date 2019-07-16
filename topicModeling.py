@@ -57,7 +57,7 @@ print("Using start_date of: ",args.date)
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
-stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come"]
+stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
@@ -119,7 +119,7 @@ logger.addHandler(dbLogger_inst)
 
 #set callbacks
 convergence_callback = gensim.models.callbacks.ConvergenceMetric(logger='shell')
-coherence_callback = gensim.models.callbacks.CoherenceMetric(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='c_v', logger='shell')
+coherence_callback = gensim.models.callbacks.CoherenceMetric(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='u_mass', logger='shell')
 perplexity_callback = gensim.models.callbacks.PerplexityMetric(corpus=corpus, logger='shell')
 diff_callback = gensim.models.callbacks.DiffMetric(logger='shell')
 
@@ -130,7 +130,7 @@ print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunk_s
 ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, eval_every=1, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
 if not args.logs:
-    topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='c_v')
+    topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='u_mass')
     avg_topic_coherence = sum([t[1] for t in topics]) / args.num_topics
     print('average topic coherence: %.4f' % avg_topic_coherence)
     #print topics to terminal 

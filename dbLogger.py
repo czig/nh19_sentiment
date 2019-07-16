@@ -39,7 +39,7 @@ class dbLogger(logging.Handler):
                 message = re.sub("\s\s+"," ", message.replace('\n',""))
                 metric_val = re.search(r'(?<=:\s)\[.*\]',message).group(0)
             else:
-                metric_val = re.search(r'(?<=:\s)[\d\.]+',message).group(0)
+                metric_val = re.search(r'(?<=:\s)-?[\d\.]+',message).group(0)
             #insert information into log TODO: change columns (need metric type and metric name) 
             self.log_conn.execute(self.insert_string.format(epoch, self.num_topics, self.iterations, self.total_passes, self.update_every, self.chunksize, self.alpha, self.beta, self.message_type, self.start_date, self.doc_size, metric_type, metric_val, self.test_name))
 
