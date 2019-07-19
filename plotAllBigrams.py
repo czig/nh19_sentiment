@@ -13,7 +13,7 @@ import networkx as nx
 import warnings
 import sqlalchemy
 import string
-import random
+import math
 from sqlalchemy import create_engine
 from tokenizer import *
 
@@ -166,8 +166,9 @@ for page in page_bigram_dict:
         else:
             node_dict[k[1]] = v
 
+    max_weight = max([v for v in page_bigram_dict[page].values()])
     fig,ax = plt.subplots(figsize=(18,14))
-    pos = nx.spring_layout(G,k=1)
+    pos = nx.spring_layout(G,k=max(math.log(max_weight+1,10),1))
 
     #draw graph 
     nx.draw_networkx(G,pos,font_size=16,width=3,edge_color='grey',node_size=200,node_color=list(node_dict.values()),cmap=plt.cm.plasma,with_labels=False,ax=ax)
@@ -197,7 +198,7 @@ G = nx.Graph()
 node_dict = {} 
 
 for k,v in all_bigram_dict.items():
-    G.add_edge(k[0],k[1], weight=(v*weight_mult))
+    G.add_edge(k[0],k[1], weight=(v))
     if k[0] in node_dict.keys():
         node_dict[k[0]] += v
     else:
@@ -207,8 +208,9 @@ for k,v in all_bigram_dict.items():
     else:
         node_dict[k[1]] = v
 
+max_weight = max([v for v in all_bigram_dict.values()])
 fig,ax = plt.subplots(figsize=(18,14))
-pos = nx.spring_layout(G,k=1)
+pos = nx.spring_layout(G,k=max(math.log(max_weight+1,10),1))
 
 #draw graph
 nx.draw_networkx(G,pos,font_size=16,width=3,node_size=200,node_color=list(node_dict.values()),edge_color='grey',cmap=plt.cm.plasma, with_labels=False,ax=ax)
