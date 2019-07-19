@@ -1,6 +1,7 @@
 import spacy
 from gensim.models import Phrases
 import unicodedata
+import re
 
 class Tokenizer(object):
     """Class for tokenizing documents.
@@ -146,6 +147,12 @@ class Tokenizer(object):
                     continue
                 #remove certain lemmas
                 elif token.lemma_.lower() in self.stop_lemmas:
+                    continue
+                #remove phone numbers
+                elif re.match(r'\+\d+',token.text):
+                    continue
+                #remove any single letter followed by a period
+                elif re.match(r'[a-zA-Z]\.',token.text):
                     continue
                 else:
                     #use lemma to get root word 
