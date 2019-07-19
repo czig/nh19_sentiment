@@ -49,12 +49,19 @@ terms_bigram = list(nltk.bigrams(words)) #creating bigrams
 #print(terms_bigram)
 #bigrams = list(itertools.chain(*terms_bigram))
 bigram_counts = collections.Counter(terms_bigram)#counting how many of each bigram shows up
+print('bigram df')
+print(bigram_counts)
 bigram_df = pd.DataFrame(bigram_counts.most_common(1000), columns = ['bigram', 'count']) #creating dataframe of x most bigrams
+print('first bigram df')
+print(bigram_df)
 bigram_df = bigram_df[bigram_df['count'] > 750]
+print('count filtered bigram df')
 print(bigram_df) #show the dataframe
 
 #Graphing network digram
 d = bigram_df.set_index('bigram').T.to_dict('records')
+print('bigram df to dict')
+print(d)
 G = nx.Graph()
 
 for k,v in d[0].items():
@@ -67,7 +74,7 @@ nx.draw_networkx(G,pos,font_size=16,width=3,edge_color='grey',node_color='purple
 plt.title('Overall Facebook Bigram Diagram')
 
 #labelling diagram
-for key, value in pos.items():
-	x,y = value[0]+.005, value[1]+0.001
-	ax.text(x,y,s=key,bbox=dict(facecolor='red',alpha=0.25),horizontalalignment='center',fontsize=13)
+# for key, value in pos.items():
+	# x,y = value[0]+.005, value[1]+0.001
+	# ax.text(x,y,s=key,bbox=dict(facecolor='red',alpha=0.25),horizontalalignment='center',fontsize=13)
 plt.show()
