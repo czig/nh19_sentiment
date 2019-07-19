@@ -129,6 +129,15 @@ print('Running LDA model on {0} from {1}'.format(args.type, args.date))
 print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunk_size: {4}, alpha: {5}, beta: {6}'.format(args.num_topics, args.iterations, args.update_every, args.num_passes, args.chunk_size, alpha, beta))
 ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, eval_every=1, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
+#save model
+if args.type == 'comments':
+    most_recent_date = comments.created_time.max()[:10]
+else:
+    most_recent_date = posts.created_time.max()[:10]
+
+file_path = gensim.test.utils.datapath("./models/ldamodel_{0}_{1}topics_{2}_to_{3}".format(args.type,args.num_topics,args.date,most_recent_date))
+ldamodel.save(file_path)
+
 if not args.logs:
     topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='u_mass')
     avg_topic_coherence = sum([t[1] for t in topics]) / args.num_topics
