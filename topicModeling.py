@@ -33,6 +33,7 @@ logger = logging.getLogger()
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
+arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy']) 
 arg_parser.add_argument("--num_topics", help="Number of topics. Default is 10.", type=int, default=10)
 arg_parser.add_argument("--num_passes", help="Number of passes. Default is 10.", type=int, default=10)
 arg_parser.add_argument("--iterations", help="Number of iterations. Default is 50.", type=int, default=50)
@@ -67,17 +68,12 @@ tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remov
 
 #read SQL database
 engine = create_engine('sqlite:///./nh19_fb.db')
-posts = pd.read_sql("""select * from posts 
-                       where created_time > '{0}' and 
-                       page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.date), engine)
-comments = pd.read_sql("""select * from comments 
-                           where created_time > '{0}' and 
-                           page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.date), engine)
+documents = pd.read_sql("""select * from {0} 
+                       where created_time > '{1}' and 
+                       page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.type,args.date), engine)
 
-posts_list = posts[posts['message'].notnull()].message.to_list()
-comments_list = comments[comments['message'].notnull()].message.to_list()
-print('Number of posts:',len(posts_list))
-print('Number of comments:',len(comments_list))
+documents_list = documents[documents['message'].notnull()].message.to_list()
+print('Number of {0}:'.format(args.type),len(documents_list))
 
 
 #check if dictionary and corpus are already saved
@@ -90,10 +86,7 @@ if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.e
 else:
     #build dicionary and corpus
     #tokenize here
-    if args.type == 'comments':
-        docs_list = tokenizer_inst.tokenize(comments_list)
-    else:
-        docs_list = tokenizer_inst.tokenize(posts_list)
+    docs_list = tokenizer_inst.tokenize(documents_list)
 
     #create and filter dictionary and create and bag of words (corpus) for lda
     dictionary = corpora.Dictionary(docs_list)
