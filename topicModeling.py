@@ -33,7 +33,7 @@ logger = logging.getLogger()
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
-arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy']) 
+arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy'], default='guy') 
 arg_parser.add_argument("--num_topics", help="Number of topics. Default is 10.", type=int, default=10)
 arg_parser.add_argument("--num_passes", help="Number of passes. Default is 10.", type=int, default=10)
 arg_parser.add_argument("--iterations", help="Number of iterations. Default is 50.", type=int, default=50)
@@ -45,9 +45,9 @@ arg_parser.add_argument("--logs", help="If supplied, only do logs and don't gene
 arg_parser.add_argument("--name", help="Test name for tracking. Default is 'sandbox'.", type=str, default='sandbox')
 args = arg_parser.parse_args()
 
-dictionary_name = "./tmp/dict_fb_onlyGuy_{0}_{1}.dict".format(args.type,args.date)
-corpus_name = "./tmp/corpus_fb_onlyGuy_{0}_{1}.mm".format(args.type,args.date)
-docs_name = "./tmp/doc_fb_onlyGuy_{0}_{1}.pkl".format(args.type,args.date)
+dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}.dict".format(args.type,args.pages,args.date)
+corpus_name = "./tmp/corpus_fb_{0}_{1}_{2}.mm".format(args.type,args.pages,args.date)
+docs_name = "./tmp/doc_fb_{0}_{1}_{2}.pkl".format(args.type,args.pages,args.date)
 
 #read off input values
 if args.ignore:
@@ -55,6 +55,14 @@ if args.ignore:
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.date)
+
+#pages used for facebook pull (USEmbassy included in all intentionally)
+if args.pages == 'all':
+    page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
+elif args.pages == 'nh':
+    page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','AFSouthern']
+elif args.pages == 'guy':
+    page_ids = ['USEmbassyGeorgetown','dpiguyana','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy'] 
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
@@ -66,13 +74,15 @@ allowed_pos = ['NOUN', 'VERB', 'PROPN']
 #define and instantiate tokenizer
 tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=True, allowed_pos=allowed_pos, lower_token=True, bigrams=True)
 
-#read SQL database
+#read SQL database 
 engine = create_engine('sqlite:///./nh19_fb.db')
-documents = pd.read_sql("""select * from {0} 
-                       where created_time > '{1}' and 
-                       page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.type,args.date), engine)
+all_documents = pd.read_sql("""select * from {0} where created_time > '{1}'""".format(args.type,args.date), engine)
 
-documents_list = documents[documents['message'].notnull()].message.to_list()
+#filter for desired pages
+relevant_documents = all_documents[all_documents['page'].isin(page_ids)]
+
+#convert to list for tokenizing
+documents_list = relevant_documents[relevant_documents['message'].notnull()].message.to_list()
 print('Number of {0}:'.format(args.type),len(documents_list))
 
 
@@ -123,12 +133,8 @@ print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunk_s
 ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, eval_every=1, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
 #save model
-if args.type == 'comments':
-    most_recent_date = comments.created_time.max()[:10]
-else:
-    most_recent_date = posts.created_time.max()[:10]
-
-file_path = gensim.test.utils.datapath("./models/ldamodel_{0}_{1}topics_{2}_to_{3}".format(args.type,args.num_topics,args.date,most_recent_date))
+most_recent_date = relevant_documents.created_time.max()[:10]
+file_path = gensim.test.utils.datapath("./models/ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics,args.date,most_recent_date))
 ldamodel.save(file_path)
 
 if not args.logs:
