@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from gensim import corpora
 import gensim
 from gensim.models import Phrases
+from gensim.test.utils import datapath
 import pyLDAvis
 import pyLDAvis.gensim
 import matplotlib.pyplot as plt
@@ -134,7 +135,7 @@ ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics,
 
 #save model
 most_recent_date = relevant_documents.created_time.max()[:10]
-file_path = gensim.test.utils.datapath("./models/ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics,args.date,most_recent_date))
+file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics,args.date,most_recent_date))
 ldamodel.save(file_path)
 
 if not args.logs:
