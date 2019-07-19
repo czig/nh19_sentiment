@@ -26,13 +26,14 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments. Defaults to comments.", choices=['posts','comments'], default='comments')
+arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy'], default='guy') 
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD. Defaults to 2019-04-01.", default="2019-04-01")
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
 args = arg_parser.parse_args()
 
-dictionary_name = "./tmp/dict_fb_onlyGuy_{0}_{1}.dict".format(args.type,args.date)
-corpus_name = "./tmp/corpus_fb_onlyGuy_{0}_{1}.mm".format(args.type,args.date)
-docs_name = "./tmp/doc_fb_onlyGuy_{0}_{1}.pkl".format(args.type,args.date)
+dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}.dict".format(args.type,args.pages,args.date)
+corpus_name = "./tmp/corpus_fb_{0}_{1}_{2}.mm".format(args.type,args.pages,args.date)
+docs_name = "./tmp/doc_fb_{0}_{1}_{2}.pkl".format(args.type,args.pages,args.date)
 
 #read off input values
 if args.ignore:
@@ -40,6 +41,15 @@ if args.ignore:
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.date)
+
+#pages used for facebook pull (USEmbassy included in all intentionally)
+if args.pages == 'all':
+    page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','dpiguyana','AFSouthern','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy']
+elif args.pages == 'nh':
+    page_ids = ['AFSOUTHNewHorizons','USEmbassyGeorgetown','southcom','AFSouthern']
+elif args.pages == 'guy':
+    page_ids = ['USEmbassyGeorgetown','dpiguyana','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy'] 
+
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
@@ -51,19 +61,16 @@ allowed_pos = ['NOUN', 'VERB', 'PROPN']
 #define and instantiate tokenizer
 tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=True, allowed_pos=allowed_pos, lower_token=True, bigrams=True)
 
-#read SQL database
+#read SQL database 
 engine = create_engine('sqlite:///./nh19_fb.db')
-posts = pd.read_sql("""select * from posts 
-                       where created_time > '{0}' and 
-                       page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.date), engine)
-comments = pd.read_sql("""select * from comments 
-                           where created_time > '{0}' and 
-                           page not in ('AFSOUTHNewHorizons','southcom','AFSouthern')""".format(args.date), engine)
+all_documents = pd.read_sql("""select * from {0} where created_time > '{1}'""".format(args.type,args.date), engine)
 
-posts_list = posts[posts['message'].notnull()].message.to_list()
-comments_list = comments[comments['message'].notnull()].message.to_list()
-print('Number of posts:',len(posts_list))
-print('Number of comments:',len(comments_list))
+#filter for desired pages
+relevant_documents = all_documents[all_documents['page'].isin(page_ids)]
+
+#convert to list for tokenizing
+documents_list = relevant_documents[relevant_documents['message'].notnull()].message.to_list()
+print('Number of {0}:'.format(args.type),len(documents_list))
 
 #check if dictionary and corpus are already saved
 if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.exists(docs_name):
@@ -75,10 +82,7 @@ if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.e
 else:
     #build dicionary and corpus
     #tokenize here
-    if args.type == 'comments':
-        docs_list = tokenizer_inst.tokenize(comments_list)
-    else:
-        docs_list = tokenizer_inst.tokenize(posts_list)
+    docs_list = tokenizer_inst.tokenize(documents_list)
 
     #create and filter dictionary and create and bag of words (corpus) for lda
     dictionary = corpora.Dictionary(docs_list)
