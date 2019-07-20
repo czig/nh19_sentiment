@@ -17,6 +17,7 @@ import warnings
 import pickle
 import sys
 from pprint import pprint
+import json
 
 #set max recursion depth
 sys.setrecursionlimit(10000)
@@ -167,6 +168,12 @@ if not args.logs:
     sig_topics = ldamodel.print_topics(num_topics=-1)
     for topic in sig_topics:
         print(topic)
+
+    #write topics to text file for classifying comments later
+    meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+    json_topics = {str(topic[0]): {"name": "", "words": topic[1]} for topic in sig_topics}
+    with open(meta_file_path,"w") as meta_file:
+        meta_file.write(json.dumps(json_topics))
 
     #visualize topics
     vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
