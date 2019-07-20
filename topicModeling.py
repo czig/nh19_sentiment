@@ -163,8 +163,6 @@ if not args.logs:
             plt.ylabel("Probability")
             plt.title('Topic #{0}, coherence: {1}'.format(i, round(topic_coherence,3)), fontsize=24)
 
-    plt.show()
-        
     #print topics in order of significance
     sig_topics = ldamodel.print_topics(num_topics=-1)
     for topic in sig_topics:
@@ -173,3 +171,6 @@ if not args.logs:
     #visualize topics
     vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
     pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}topics.html'.format(args.type,args.date,args.num_topics))
+
+    #show plots after saving pyLDAvis
+    plt.show()
