@@ -1,5 +1,5 @@
 import spacy
-from gensim.models import Phrases
+from gensim.models.phrases import Phrases, Phraser
 import unicodedata
 import re
 
@@ -176,7 +176,7 @@ class Tokenizer(object):
 
         if self.bigrams:
             #if bigram occurs more than bigram_min_count times in all documents, append bigram to document (message) tokens list
-            bigram = Phrases(docs_list, min_count=self.bigram_min_count)
+            bigram = Phraser(Phrases(docs_list, min_count=self.bigram_min_count))
             for idx in range(len(docs_list)):
                 for token in bigram[docs_list[idx]]:
                     if '_' in token:
