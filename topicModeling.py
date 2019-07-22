@@ -68,7 +68,12 @@ elif args.pages == 'guy':
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
-stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+if args.type == 'comments':
+    #stop lemmas for comments
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+else:
+    #stop lemmas for posts
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
@@ -78,7 +83,7 @@ tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remov
 
 #read SQL database 
 engine = create_engine('sqlite:///./nh19_fb.db')
-all_documents = pd.read_sql("""select * from {0} where created_time > '{1}'""".format(args.type,args.date), engine)
+all_documents = pd.read_sql("""select * from {0} where created_time >= '{1}'""".format(args.type,args.date), engine)
 
 #filter for desired pages
 relevant_documents = all_documents[all_documents['page'].isin(page_ids)]
@@ -170,14 +175,14 @@ if not args.logs:
         print(topic)
 
     #write topics to text file for classifying comments later
-    meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+    meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.date, most_recent_date)
     json_topics = {str(topic[0]): {"name": "", "words": topic[1]} for topic in sig_topics}
     with open(meta_file_path,"w") as meta_file:
         meta_file.write(json.dumps(json_topics))
 
     #visualize topics
     vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
-    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}topics.html'.format(args.type,args.date,args.num_topics))
+    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}_{3}topics.html'.format(args.type,args.pages,args.date,args.num_topics))
 
     #show plots after saving pyLDAvis
     plt.show()

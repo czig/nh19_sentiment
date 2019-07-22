@@ -39,7 +39,12 @@ print("Using start_date of: ",args.start_date)
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
-stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+if args.type == 'comments':
+    #stop lemmas for comments
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+else:
+    #stop lemmas for posts
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
