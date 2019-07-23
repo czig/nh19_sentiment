@@ -75,6 +75,7 @@ elif args.pages == 'all':
     engine = create_engine('sqlite:///./raw_sentiment.db')
     out_engine = create_engine('sqlite:///./raw_classified.db')
 
+#TODO: separate pull from posts (redo sentiment SQL and call table 'comments' or 'posts')
 #select all comments
 df = pd.read_sql("""select * from CommentSentiment where created_time >= '{0}'""".format(args.start_date), engine)
 
@@ -98,9 +99,12 @@ for index,row in df.iterrows():
         message = row['post_message']
 
     #tokenize one message
-    tokens = tokenizer_inst.tokenize([message], return_docs=False)
-    #convert message to bag of words
-    doc = dictionary.doc2bow(tokens)
+    if message == None:
+        doc = []
+    else:
+        tokens = tokenizer_inst.tokenize([message], return_docs=False)
+        #convert message to bag of words
+        doc = dictionary.doc2bow(tokens)
     #classify as a topic (topic_dist is a list of tuples, where each tuple stores (topic_id, probability))
     topic_dist = ldamodel[doc]
     #take max over second element of tuple (probability)
@@ -116,7 +120,7 @@ for index,row in df.iterrows():
 
 #average sentiment per time period for each topic (every week)
 time_df = df
-time_df['created_time'] = pd.to_datetime(df.created_time)
+time_df['created_time'] = pd.to_datetime(time_df.created_time)
 time_df = time_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),column_name]).mean().reset_index()
 time_df = time_df.fillna(0)
 time_df['created_time'] = time_df['created_time'].dt.strftime("%Y-%m-%d")
@@ -125,7 +129,25 @@ print(time_df.head())
 sns.pointplot(x='created_time',y='compound', hue=column_name, ci=None, data=time_df, palette=sns.color_palette("muted"))
 plt.title('Sentiment by Topic Over Time', fontsize=26)
 plt.xticks(rotation=45)
+plt.subplots_adjust(bottom=0.3)
+plt.ylabel("Average Sentiment Score", fontsize = 20)
 plt.savefig("./topics/topic_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
+
+#sentiment variance per time period for each topic (every week)
+time_var_df = df
+time_var_df['created_time'] = pd.to_datetime(time_var_df.created_time)
+time_var_df = time_var_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),column_name]).var().reset_index()
+time_var_df = time_var_df.fillna(0)
+time_var_df['created_time'] = time_var_df['created_time'].dt.strftime("%Y-%m-%d")
+print('variance over time dataframe')
+print(time_var_df.head())
+plt.figure()
+sns.pointplot(x='created_time',y='compound', hue=column_name, ci=None, data=time_var_df, palette=sns.color_palette("muted"))
+plt.title('Sentiment Variance by Topic Over Time', fontsize=26)
+plt.xticks(rotation=45)
+plt.subplots_adjust(bottom=0.3)
+plt.ylabel("Variance of Sentiment Score", fontsize = 20)
+plt.savefig("./topics/topic_variance_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #average sentiment per topic
 topic_df = df.groupby([column_name]).mean()['compound'].sort_values(ascending=False)
@@ -141,6 +163,21 @@ ax = plt.gca()
 ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
 plt.title("Average Sentiment Per Topic {0} to {1}".format(args.start_date, args.end_date), fontsize = 24)
 plt.savefig("./topics/topic_avg_sentiment_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
+
+#average sentiment per topic
+topic_var_df = df.groupby([column_name]).var()['compound'].sort_values(ascending=False)
+print('topic sentiment variance dataframe')
+print(topic_var_df.head())
+plt.figure()
+topic_var_df.plot.bar()
+plt.xticks(rotation=40, ha='right')
+plt.subplots_adjust(bottom=0.3)
+plt.xlabel("Topic", fontsize = 20)
+plt.ylabel("Sentiment Variance", fontsize = 20)
+ax = plt.gca()
+ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
+plt.title("Sentiment Variance Per Topic {0} to {1}".format(args.start_date, args.end_date), fontsize = 24)
+plt.savefig("./topics/topic_var_sentiment_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #number of comments per topic
 number_df = df.groupby([column_name]).size().sort_values(ascending=False)
