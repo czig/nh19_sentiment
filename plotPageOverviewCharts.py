@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 engine = create_engine('sqlite:///./nh19_sentiment.db')
 
-sentiment_df = pd.read_sql("""select * from CommentSentiment where created_time > '2019-01-01'""",engine)
+sentiment_df = pd.read_sql("""select * from comments where created_time > '2019-01-01'""",engine)
 
 page_stats = sentiment_df.groupby("page")
 print(page_stats.max())

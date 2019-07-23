@@ -12,7 +12,7 @@ sns.set(rc = {'figure.figsize':(11,4)})
 engine = create_engine('sqlite:///./nh19_sentiment.db')
 
 #Reading dataframes
-sentiment_df = pd.read_sql("""select * from CommentSentiment""",engine)
+sentiment_df = pd.read_sql("""select * from comments""",engine)
 embassy_df = sentiment_df[sentiment_df['page']=='USEmbassyGeorgetown']
 southcom_df=sentiment_df[sentiment_df['page']=='southcom']
 nh_df=sentiment_df[sentiment_df['page']=='AFSOUTHNewHorizons']

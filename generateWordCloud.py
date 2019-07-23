@@ -19,7 +19,7 @@ for word in stop_words:
 engine = create_engine('sqlite:///./nh19_sentiment.db')
 
 #get all comments for this year
-sentiment_df = pd.read_sql("""select * from CommentSentiment where created_time > '2019-01-01'""",engine)
+sentiment_df = pd.read_sql("""select * from comments where created_time > '2019-01-01'""",engine)
 
 #filter for page
 embassy_df = sentiment_df[sentiment_df['page'] == "USEmbassyGeorgetown"]

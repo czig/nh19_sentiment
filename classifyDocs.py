@@ -75,9 +75,8 @@ elif args.pages == 'all':
     engine = create_engine('sqlite:///./raw_sentiment.db')
     out_engine = create_engine('sqlite:///./raw_classified.db')
 
-#TODO: separate pull from posts (redo sentiment SQL and call table 'comments' or 'posts')
-#select all comments
-df = pd.read_sql("""select * from CommentSentiment where created_time >= '{0}' limit 1000""".format(args.start_date), engine)
+#select all comments/posts
+df = pd.read_sql("""select * from {0} where created_time >= '{1}' limit 1000""".format(args.type, args.start_date), engine)
 
 #log size of df
 print('Df shape: ', df.shape)
@@ -88,46 +87,39 @@ with open(meta_file_path,"r") as meta_file:
     json_topics = json.load(meta_file)
 topics = {int(topic): json_topics[topic] for topic in json_topics}
 
-column_name = 'topic'
-df[column_name] = ""
+df['topic'] = ""
 count = 0
 for index,row in df.iterrows():
-    #select column
-    if args.type == 'comments':
-        message = row['message']
-    else:
-        message = row['post_message']
-
-    #tokenize one message
-    if message == None:
-        doc = []
-    else:
-        tokens = tokenizer_inst.tokenize([message], return_docs=False)
-        #convert message to bag of words
-        doc = dictionary.doc2bow(tokens)
+    #comment table and post table both have row called message (no longer using column
+    #'post_message' on comments table)
+    message = row['message']
+    #tokenize one message (both post and comment messages are filtered in their respective tables
+    #when generating sentiment scores -- no need to catch null message now)
+    tokens = tokenizer_inst.tokenize([message], return_docs=False)
+    #convert message to bag of words
+    doc = dictionary.doc2bow(tokens)
     #classify as a topic (topic_dist is a list of tuples, where each tuple stores (topic_id, probability))
     topic_dist = ldamodel[doc]
     #take max over second element of tuple (probability)
     most_likely_topic = max(topic_dist, key=lambda item:item[1])
     most_likely_topic_name = topics[most_likely_topic[0]]['name']
-    df.at[index, column_name] = most_likely_topic_name
+    df.at[index, 'topic'] = most_likely_topic_name
 
     #log status 
     if index % 1000 == 0:
-        print('%d comments classified' % (count*1000))
+        print('%d %s classified' % (count*1000,args.type))
         count += 1
-
 
 #average sentiment per time period for each topic (every week)
 time_df = df
 time_df['created_time'] = pd.to_datetime(time_df.created_time)
-time_df = time_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),column_name]).mean().reset_index()
+time_df = time_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),'topic']).mean().reset_index()
 time_df = time_df.fillna(0)
 time_df['created_time'] = time_df['created_time'].dt.strftime("%Y-%m-%d")
 print('time dataframe')
 print(time_df.head())
-unique_topics = time_df[column_name].unique()
-sns.pointplot(x='created_time',y='compound', hue=column_name, markers=["."]*len(unique_topics), ci=None, data=time_df, palette=sns.color_palette("muted"))
+unique_topics = time_df['topic'].unique()
+sns.pointplot(x='created_time',y='compound', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_df, palette=sns.color_palette("muted"))
 plt.title('Sentiment by Topic Over Time', fontsize=24)
 plt.xticks(rotation=45)
 plt.subplots_adjust(bottom=0.3)
@@ -137,14 +129,14 @@ plt.savefig("./topics/topic_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(a
 #sentiment variance per time period for each topic (every week)
 time_std_df = df
 time_std_df['created_time'] = pd.to_datetime(time_std_df.created_time)
-time_std_df = time_std_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),column_name]).std().reset_index()
+time_std_df = time_std_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),'topic']).std().reset_index()
 time_std_df = time_std_df.fillna(0)
 time_std_df['created_time'] = time_std_df['created_time'].dt.strftime("%Y-%m-%d")
 print('standard deviation over time dataframe')
 print(time_std_df.head())
 plt.figure()
-unique_topics = time_std_df[column_name].unique()
-sns.pointplot(x='created_time',y='compound', hue=column_name, markers=["."]*len(unique_topics), ci=None, data=time_std_df, palette=sns.color_palette("muted"))
+unique_topics = time_std_df['topic'].unique()
+sns.pointplot(x='created_time',y='compound', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_std_df, palette=sns.color_palette("muted"))
 plt.title('Sentiment Std. Dev. by Topic Over Time', fontsize=24)
 plt.xticks(rotation=45)
 plt.subplots_adjust(bottom=0.3)
@@ -152,7 +144,7 @@ plt.ylabel("Std. Dev. of Sentiment Score", fontsize = 14)
 plt.savefig("./topics/topic_std_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #average sentiment per topic
-topic_df = df.groupby([column_name]).mean()['compound'].sort_values(ascending=False)
+topic_df = df.groupby(['topic']).mean()['compound'].sort_values(ascending=False)
 print('topic dataframe')
 print(topic_df)
 plt.figure()
@@ -167,7 +159,7 @@ plt.title("Average Sentiment Per Topic {0} to {1}".format(args.start_date, args.
 plt.savefig("./topics/topic_avg_sentiment_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #average sentiment per topic
-topic_std_df = df.groupby([column_name]).std()['compound'].sort_values(ascending=False)
+topic_std_df = df.groupby(['topic']).std()['compound'].sort_values(ascending=False)
 print('topic sentiment std. dev. dataframe')
 print(topic_std_df.head())
 plt.figure()
@@ -182,7 +174,7 @@ plt.title("Sentiment Std. Dev. Per Topic {0} to {1}".format(args.start_date, arg
 plt.savefig("./topics/topic_std_sentiment_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #number of comments per topic
-number_df = df.groupby([column_name]).size().sort_values(ascending=False)
+number_df = df.groupby(['topic']).size().sort_values(ascending=False)
 print('number dataframe')
 print(number_df)
 plt.figure()
