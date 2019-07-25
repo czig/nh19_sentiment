@@ -70,10 +70,10 @@ elif args.pages == 'guy':
 stop_words = ["lol","READ","MORE","NEWS"]
 if args.type == 'comments':
     #stop lemmas for comments
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad"]
 else:
     #stop lemmas for posts
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese"]
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese","ppl","way","yuh","be","guy"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
