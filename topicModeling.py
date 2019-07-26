@@ -69,11 +69,10 @@ elif args.pages == 'guy':
     page_ids = ['USEmbassyGeorgetown','dpiguyana','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy'] 
 
 #add stop words
-#TODO: find way to trace stop words for each run
 stop_words = ["lol","READ","MORE","NEWS"]
 if args.type == 'comments':
     #stop lemmas for comments
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad","ppl","way","yuh","be","guy","comment"]
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad","ppl","way","yuh","be","guy","comment","lol"]
 else:
     #stop lemmas for posts
     stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese","news"]
@@ -82,7 +81,10 @@ else:
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
 
 #define and instantiate tokenizer
-tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=True, allowed_pos=allowed_pos, lower_token=True, bigrams=True)
+remove_unicode = True
+lower_token=True
+bigrams=True
+tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=remove_unicode, allowed_pos=allowed_pos, lower_token=lower_token, bigrams=bigrams)
 
 #read SQL database 
 engine = create_engine('sqlite:///./nh19_fb.db')
@@ -95,7 +97,7 @@ relevant_documents = all_documents[all_documents['page'].isin(page_ids)]
 documents_list = relevant_documents[relevant_documents['message'].notnull()].message.to_list()
 print('Number of {0}:'.format(args.type),len(documents_list))
 
-#check if dictionary and corpus are already saved
+#check if dictionary and corpus are already saved, and if so, load then and do not tokenize 
 if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.exists(docs_name):
     #load dictionary and corpus
     dictionary = corpora.Dictionary.load(dictionary_name)
@@ -116,6 +118,18 @@ else:
     corpora.MmCorpus.serialize(corpus_name, corpus)
     with open(docs_name,'wb') as docs:
         pickle.dump(docs_list, docs)
+    #save arguments used for creating dictionary and corpus (dictionary and corpus metadata)
+    tokenize_meta_path = "./tmp/meta_fb_{0}_{1}_{2}_to_{3}.txt".format(args.type,args.pages,args.start_date,args.end_date)
+    tokens_meta_dict = {
+        'stop_words': stop_words,
+        'stop_lemmas': stop_lemmas,
+        'allowed_pos': allowed_pos,
+        'remove_unicode': remove_unicode,
+        'lower_token': lower_token,
+        'bigrams': bigrams
+    }
+    with open(tokenize_meta_path,"w") as tokens_meta_file:
+        tokens_meta_file.write(json.dumps(tokens_meta_dict))
 
 #log number of unique tokens and number of documents
 print('Number of unique tokens: %d' % len(dictionary))
@@ -146,6 +160,35 @@ most_recent_date = relevant_documents.created_time.max()[:10]
 file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics,args.start_date,args.end_date))
 ldamodel.save(file_path)
 
+#save meta information for run to track what arguments were used 
+meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+meta_dict = {
+    'dictionary': dictionary_name,
+    'corpus': corpus_name,
+    'docs': docs_name,
+    'num_topics': args.num_topics,
+    'iterations': args.iterations,
+    'update_every': args.update_every,
+    'num_passes': args.num_passes,
+    'chunksize': args.chunk_size,
+    'alpha': alpha,
+    'beta': beta
+}
+with open(meta_file_path,"w") as meta_file:
+    meta_file.write(json.dumps(meta_dict))
+
+#print topics in order of significance
+sig_topics = ldamodel.print_topics(num_topics=-1)
+for topic in sig_topics:
+    print(topic)
+
+#write topics to text file for classifying comments later
+topics_file_path = "./models/ldamodel_topics_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+json_topics = {str(topic[0]): {"name": "", "words": topic[1]} for topic in sig_topics}
+with open(topics_file_path,"w") as topic_file:
+    topic_file.write(json.dumps(json_topics))
+
+#if not a log only run, create visualizations 
 if not args.logs:
     topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='u_mass')
     avg_topic_coherence = sum([t[1] for t in topics]) / args.num_topics
@@ -170,17 +213,6 @@ if not args.logs:
             plt.subplots_adjust(bottom=0.3)
             plt.ylabel("Probability")
             plt.title('Topic #{0}, coherence: {1}'.format(i, round(topic_coherence,3)), fontsize=24)
-
-    #print topics in order of significance
-    sig_topics = ldamodel.print_topics(num_topics=-1)
-    for topic in sig_topics:
-        print(topic)
-
-    #write topics to text file for classifying comments later
-    meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
-    json_topics = {str(topic[0]): {"name": "", "words": topic[1]} for topic in sig_topics}
-    with open(meta_file_path,"w") as meta_file:
-        meta_file.write(json.dumps(json_topics))
 
     #visualize topics
     vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
