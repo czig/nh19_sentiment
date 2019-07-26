@@ -23,7 +23,6 @@ import json
 sys.setrecursionlimit(10000)
 
 #custom file import
-from dbLogger import *
 from tokenizer import *
 
 #do logging as dictated by gensim
@@ -135,13 +134,10 @@ else:
 print('Number of unique tokens: %d' % len(dictionary))
 print('Number of documents: %d' % len(corpus))
 
-#set variables (override defaults to enable custom logging in db)
+#set variables (keep values for saving model meta file)
 alpha = 'auto'
 beta = 'auto' 
 doc_size = len(corpus)
-dbLogger_inst = dbLogger()
-dbLogger_inst.set_values(args.num_topics, args.iterations, args.num_passes, args.update_every, args.chunk_size, alpha, beta, args.type, args.start_date, doc_size, args.name)
-logger.addHandler(dbLogger_inst)
 
 #set callbacks
 convergence_callback = gensim.models.callbacks.ConvergenceMetric(logger='shell')
@@ -188,35 +184,34 @@ json_topics = {str(topic[0]): {"name": "", "words": topic[1]} for topic in sig_t
 with open(topics_file_path,"w") as topic_file:
     topic_file.write(json.dumps(json_topics))
 
-#if not a log only run, create visualizations 
-if not args.logs:
-    topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='u_mass')
-    avg_topic_coherence = sum([t[1] for t in topics]) / args.num_topics
-    print('average topic coherence: %.4f' % avg_topic_coherence)
-    #print topics to terminal 
-    pprint(topics)
-    #build plot for each topic coherence
-    topic_coherences = [topic[1] for topic in topics]
-    plt.figure(0)
-    plt.plot(topic_coherences)
-    plt.ylabel('Coherence')
-    #build plot for first 10 topics topic (show word distribution)
-    for i,topic in enumerate(topics):
-        #topic is a tuple, with first element list of tuples and second element topic coherence
-        topic_coherence = topic[1]
-        words = [element[1] for element in topic[0]]
-        coherences = [element[0] for element in topic[0]]
-        if i < 10:
-            plt.figure(i+1)
-            plt.bar(words, coherences)
-            plt.xticks(rotation=40, ha='right')
-            plt.subplots_adjust(bottom=0.3)
-            plt.ylabel("Probability")
-            plt.title('Topic #{0}, coherence: {1}'.format(i, round(topic_coherence,3)), fontsize=24)
+#create visualizations 
+topics = ldamodel.top_topics(corpus=corpus, dictionary=dictionary, texts=docs_list, coherence='u_mass')
+avg_topic_coherence = sum([t[1] for t in topics]) / args.num_topics
+print('average topic coherence: %.4f' % avg_topic_coherence)
+#print topics to terminal 
+pprint(topics)
+#build plot for each topic coherence
+topic_coherences = [topic[1] for topic in topics]
+plt.figure(0)
+plt.plot(topic_coherences)
+plt.ylabel('Coherence')
+#build plot for first 10 topics topic (show word distribution)
+for i,topic in enumerate(topics):
+    #topic is a tuple, with first element list of tuples and second element topic coherence
+    topic_coherence = topic[1]
+    words = [element[1] for element in topic[0]]
+    coherences = [element[0] for element in topic[0]]
+    if i < 10:
+        plt.figure(i+1)
+        plt.bar(words, coherences)
+        plt.xticks(rotation=40, ha='right')
+        plt.subplots_adjust(bottom=0.3)
+        plt.ylabel("Probability")
+        plt.title('Topic #{0}, coherence: {1}'.format(i, round(topic_coherence,3)), fontsize=24)
 
-    #visualize topics
-    vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
-    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}topics_{3}_to_{4}.html'.format(args.type,args.pages,args.num_topics,args.start_date,args.end_date))
+#visualize topics
+vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
+pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}topics_{3}_to_{4}.html'.format(args.type,args.pages,args.num_topics,args.start_date,args.end_date))
 
-    #show plots after saving pyLDAvis
-    plt.show()
+#show plots after saving pyLDAvis
+plt.show()
