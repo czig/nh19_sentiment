@@ -41,22 +41,24 @@ arg_parser.add_argument("--num_passes", help="Number of passes. Default is 10.",
 arg_parser.add_argument("--iterations", help="Number of iterations. Default is 50.", type=int, default=50)
 arg_parser.add_argument("--chunk_size", help="Chunk Size. Default is 2000.", type=int, default=2000)
 arg_parser.add_argument("--update_every", help="Update every flag. Default is 0 (batch learning).", type=int, default=0)
-arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
+arg_parser.add_argument("--start_date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
+arg_parser.add_argument("--end_date", help="Latest date for posts/comments in format YYYY-MM-DD. Default is 2019-06-22.", default="2019-06-22")
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
 arg_parser.add_argument("--logs", help="If supplied, only do logs and don't generate visualization", action="store_true")
 arg_parser.add_argument("--name", help="Test name for tracking. Default is 'sandbox'.", type=str, default='sandbox')
 args = arg_parser.parse_args()
 
-dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}.dict".format(args.type,args.pages,args.date)
-corpus_name = "./tmp/corpus_fb_{0}_{1}_{2}.mm".format(args.type,args.pages,args.date)
-docs_name = "./tmp/doc_fb_{0}_{1}_{2}.pkl".format(args.type,args.pages,args.date)
+dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}_to_{3}.dict".format(args.type,args.pages,args.start_date,args.end_date)
+corpus_name = "./tmp/corpus_fb_{0}_{1}_{2}_to_{3}.mm".format(args.type,args.pages,args.start_date,args.end_date)
+docs_name = "./tmp/doc_fb_{0}_{1}_{2}_to_{3}.pkl".format(args.type,args.pages,args.start_date,args.end_date)
 
 #read off input values
 if args.ignore:
     print('Ignoring all warnings...')
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 print("Using %s for analysis" % args.type)
-print("Using start_date of: ",args.date)
+print("Using start_date of: ",args.start_date)
+print("Using end_date of: ",args.end_date)
 
 #pages used for facebook pull (USEmbassy included in all intentionally)
 if args.pages == 'all':
@@ -67,13 +69,14 @@ elif args.pages == 'guy':
     page_ids = ['USEmbassyGeorgetown','dpiguyana','NewsSourceGuyana','655452691211411','kaieteurnewsonline','demwaves','CapitolNewsGY','PrimeNewsGuyana','INews.Guyana','stabroeknews','NCNGuyanaNews','dailynewsguyana','actionnewsguyana','gychronicle','gytimes','newsroomgy'] 
 
 #add stop words
+#TODO: find way to trace stop words for each run
 stop_words = ["lol","READ","MORE","NEWS"]
 if args.type == 'comments':
     #stop lemmas for comments
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad"]
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad","ppl","way","yuh","be","guy","comment"]
 else:
     #stop lemmas for posts
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese","ppl","way","yuh","be","guy"]
+    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese","news"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
@@ -83,7 +86,7 @@ tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remov
 
 #read SQL database 
 engine = create_engine('sqlite:///./nh19_fb.db')
-all_documents = pd.read_sql("""select * from {0} where created_time >= '{1}'""".format(args.type,args.date), engine)
+all_documents = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_time <= '{2}'""".format(args.type,args.start_date,args.end_date), engine)
 
 #filter for desired pages
 relevant_documents = all_documents[all_documents['page'].isin(page_ids)]
@@ -91,7 +94,6 @@ relevant_documents = all_documents[all_documents['page'].isin(page_ids)]
 #convert to list for tokenizing
 documents_list = relevant_documents[relevant_documents['message'].notnull()].message.to_list()
 print('Number of {0}:'.format(args.type),len(documents_list))
-
 
 #check if dictionary and corpus are already saved
 if os.path.exists(dictionary_name) and os.path.exists(corpus_name) and os.path.exists(docs_name):
@@ -124,7 +126,7 @@ alpha = 'auto'
 beta = 'auto' 
 doc_size = len(corpus)
 dbLogger_inst = dbLogger()
-dbLogger_inst.set_values(args.num_topics, args.iterations, args.num_passes, args.update_every, args.chunk_size, alpha, beta, args.type, args.date, doc_size, args.name)
+dbLogger_inst.set_values(args.num_topics, args.iterations, args.num_passes, args.update_every, args.chunk_size, alpha, beta, args.type, args.start_date, doc_size, args.name)
 logger.addHandler(dbLogger_inst)
 
 #set callbacks
@@ -135,13 +137,13 @@ diff_callback = gensim.models.callbacks.DiffMetric(logger='shell')
 
 #run lda topic modelling
 print('***************************************')
-print('Running LDA model on {0} from {1}'.format(args.type, args.date))
+print('Running LDA model on {0} from {1} to {2}'.format(args.type, args.start_date, args.end_date))
 print('num_topics: {0}, iterations: {1}, update_every: {2}, passes: {3}, chunk_size: {4}, alpha: {5}, beta: {6}'.format(args.num_topics, args.iterations, args.update_every, args.num_passes, args.chunk_size, alpha, beta))
 ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = args.num_topics, iterations=args.iterations, id2word = dictionary, update_every=args.update_every, eval_every=1, passes=args.num_passes, chunksize=args.chunk_size, alpha=alpha, eta=beta, callbacks=[convergence_callback, coherence_callback, perplexity_callback, diff_callback])
 
 #save model
 most_recent_date = relevant_documents.created_time.max()[:10]
-file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics,args.date,most_recent_date))
+file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics,args.start_date,args.end_date))
 ldamodel.save(file_path)
 
 if not args.logs:
@@ -175,14 +177,14 @@ if not args.logs:
         print(topic)
 
     #write topics to text file for classifying comments later
-    meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.date, most_recent_date)
+    meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
     json_topics = {str(topic[0]): {"name": "", "words": topic[1]} for topic in sig_topics}
     with open(meta_file_path,"w") as meta_file:
         meta_file.write(json.dumps(json_topics))
 
     #visualize topics
     vis = pyLDAvis.gensim.prepare(ldamodel,corpus,dictionary)
-    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}_{3}topics.html'.format(args.type,args.pages,args.date,args.num_topics))
+    pyLDAvis.save_html(vis, './lda_vis/lda_vis_{0}_{1}_{2}topics_{3}_to_{4}.html'.format(args.type,args.pages,args.num_topics,args.start_date,args.end_date))
 
     #show plots after saving pyLDAvis
     plt.show()
