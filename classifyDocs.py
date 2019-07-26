@@ -12,6 +12,8 @@ import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(rc = {'figure.figsize':(11,4)})
+#can change default below (larger lines and labels)
+sns.set_context('talk')
 
 #import argument parser
 import argparse
@@ -45,6 +47,9 @@ if os.path.exists(tokenize_meta_path):
     stop_words = tokenize_args['stop_words']
     stop_lemmas = tokenize_args['stop_lemmas']
     allowed_pos = tokenize_args['allowed_pos']
+    print('stop_words: ',stop_words)
+    print('stop_lemmas: ',stop_lemmas)
+    print('allowed_pos: ',allowed_pos)
 else:
     #add stop words
     stop_words = ["lol","READ","MORE","NEWS"]
@@ -128,10 +133,14 @@ time_df['created_time'] = time_df['created_time'].dt.strftime("%Y-%m-%d")
 print('time dataframe')
 print(time_df.head())
 unique_topics = time_df['topic'].unique()
-sns.pointplot(x='created_time',y='compound', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_df, palette=sns.color_palette("muted"))
-plt.title('Sentiment by Topic Over Time', fontsize=24)
-plt.xticks(rotation=45)
+ax = sns.pointplot(x='created_time',y='compound', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_df, palette=sns.color_palette("muted"))
+ax.grid(True)
+#can choose to not show all tick marks
+#ax.set_xticks(ax.get_xticks()[::4])
+plt.title('Sentiment by Topic Over Time for {0}'.format(args.type.capitalize()), fontsize=24)
+plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.3)
+plt.xlabel("Created Date",fontsize=14)
 plt.ylabel("Average Sentiment Score", fontsize = 14)
 plt.savefig("./topics/topic_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
@@ -145,12 +154,33 @@ print('standard deviation over time dataframe')
 print(time_std_df.head())
 plt.figure()
 unique_topics = time_std_df['topic'].unique()
-sns.pointplot(x='created_time',y='compound', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_std_df, palette=sns.color_palette("muted"))
-plt.title('Sentiment Std. Dev. by Topic Over Time', fontsize=24)
-plt.xticks(rotation=45)
+ax = sns.pointplot(x='created_time',y='compound', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_std_df, palette=sns.color_palette("muted"))
+ax.grid(True)
+plt.title('Sentiment Std. Dev. by Topic Over Time for {0}'.format(args.type.capitalize()), fontsize=24)
+plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.3)
+plt.xlabel("Created Date", fontsize = 14)
 plt.ylabel("Std. Dev. of Sentiment Score", fontsize = 14)
 plt.savefig("./topics/topic_std_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
+
+#count per period for each topic (every week)
+time_count_df = df
+time_count_df['created_time'] = pd.to_datetime(time_count_df.created_time)
+time_count_df = time_count_df.groupby([pd.Grouper(key='created_time', freq='W-MON'),'topic']).size().reset_index(name='counts')
+time_count_df = time_count_df.fillna(0)
+time_count_df['created_time'] = time_count_df['created_time'].dt.strftime("%Y-%m-%d")
+print('count of topic over time dataframe')
+print(time_count_df.head())
+plt.figure()
+unique_topics = time_count_df['topic'].unique()
+ax = sns.pointplot(x='created_time',y='counts', hue='topic', markers=["."]*len(unique_topics), ci=None, data=time_count_df, palette=sns.color_palette("muted"))
+ax.grid(True)
+plt.title('Number of {0} by Topic Over Time'.format(args.type.capitalize()), fontsize=24)
+plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
+plt.subplots_adjust(bottom=0.3)
+plt.xlabel("Created Date", fontsize = 14)
+plt.ylabel("Count", fontsize = 14)
+plt.savefig("./topics/topic_count_over_time_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #average sentiment per topic
 topic_df = df.groupby(['topic']).mean()['compound'].sort_values(ascending=False)
@@ -158,43 +188,43 @@ print('topic dataframe')
 print(topic_df)
 plt.figure()
 topic_df.plot.bar()
-plt.xticks(rotation=40, ha='right')
+plt.xticks(rotation=40, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.3)
 plt.xlabel("Topic", fontsize = 20)
 plt.ylabel("Average Sentiment", fontsize = 20)
 ax = plt.gca()
 ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
-plt.title("Average Sentiment Per Topic {0} to {1}".format(args.start_date, args.end_date), fontsize = 24)
+plt.title("Average Sentiment for {0} Per Topic, {1} to {2}".format(args.type.capitalize(), args.start_date, args.end_date), fontsize = 24)
 plt.savefig("./topics/topic_avg_sentiment_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
-#average sentiment per topic
+#sentiment standard deviation per topic
 topic_std_df = df.groupby(['topic']).std()['compound'].sort_values(ascending=False)
 print('topic sentiment std. dev. dataframe')
 print(topic_std_df.head())
 plt.figure()
 topic_std_df.plot.bar()
-plt.xticks(rotation=40, ha='right')
+plt.xticks(rotation=40, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.3)
 plt.xlabel("Topic", fontsize = 20)
 plt.ylabel("Sentiment Std. Dev.", fontsize = 20)
 ax = plt.gca()
 ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
-plt.title("Sentiment Std. Dev. Per Topic {0} to {1}".format(args.start_date, args.end_date), fontsize = 24)
+plt.title("Sentiment Std. Dev. for {0} Per Topic, {1} to {2}".format(args.type.capitalize(), args.start_date, args.end_date), fontsize = 24)
 plt.savefig("./topics/topic_std_sentiment_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
-#number of comments per topic
+#number of messages (posts or comments) per topic
 number_df = df.groupby(['topic']).size().sort_values(ascending=False)
 print('number dataframe')
 print(number_df)
 plt.figure()
 number_df.plot.bar()
-plt.xticks(rotation=400, ha='right')
+plt.xticks(rotation=40, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.3)
 plt.xlabel("Topic", fontsize=20)
-plt.ylabel("Total Comments", fontsize=20)
+plt.ylabel("Count", fontsize=20)
 ax = plt.gca()
 ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
-plt.title("Number of comments Per Topic {0} to {1}".format(args.start_date, args.end_date), fontsize = 24)
+plt.title("Number of {0} Per Topic, {1} to {2}".format(args.type.capitalize(),args.start_date, args.end_date), fontsize = 24)
 plt.savefig("./topics/topic_count_{0}_{1}_{2}topics_{3}_to_{4}.png".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #write to database
