@@ -28,7 +28,7 @@ args = arg_parser.parse_args()
 file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
 
 #create name for common dictionary
-dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}.dict".format(args.type,args.pages,args.start_date)
+dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}_to_{3}.dict".format(args.type,args.pages,args.start_date,args.end_date)
 
 #read off input values
 if args.ignore:
@@ -57,7 +57,7 @@ if os.path.exists(dictionary_name):
     #load dictionary and corpus
     dictionary = corpora.Dictionary.load(dictionary_name)
 else:
-    sys.exit('Error: dictionary for {0} for {1} starting at {2} does not exist.'.format(args.type, args.pages, args.start_date))
+    sys.exit('Error: dictionary for {0} for {1} starting at {2} and ending at {3} does not exist.'.format(args.type, args.pages, args.start_date, args.end_date))
 
 ldamodel = gensim.models.ldamodel.LdaModel.load(file_path)
 all_topics = ldamodel.print_topics(num_topics=-1)
@@ -76,13 +76,13 @@ elif args.pages == 'all':
     out_engine = create_engine('sqlite:///./raw_classified.db')
 
 #select all comments/posts
-df = pd.read_sql("""select * from {0} where created_time >= '{1}' limit 1000""".format(args.type, args.start_date), engine)
+df = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_time <= '{2}'""".format(args.type, args.start_date, args.end_date), engine)
 
 #log size of df
 print('Df shape: ', df.shape)
 
 #read topic meta file to get names of topics
-meta_file_path = "./models/ldamodel_meta_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+meta_file_path = "./models/ldamodel_topics_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
 with open(meta_file_path,"r") as meta_file:
     json_topics = json.load(meta_file)
 topics = {int(topic): json_topics[topic] for topic in json_topics}
