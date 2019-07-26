@@ -14,7 +14,8 @@ import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
 arg_parser.add_argument("--pages", help="Specify whether to use all facebook pages, only US facebook pages, or only Guyana faebook pages. Default is us", choices=['all','us','guy'], default='us')
-arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
+arg_parser.add_argument("--start_date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
+arg_parser.add_argument("--end_date", help="Latest date for posts/comments in format YYYY-MM-DD. Default is 2019-06-22.", default="2019-06-22")
 args = arg_parser.parse_args()
 
 #stop words for both types of pages
@@ -67,7 +68,7 @@ page_to_tokenizer = {
 engine = create_engine('sqlite:///./nh19_fb.db')
 
 #get all comments or posts for a date up to most recent post/comment 
-raw_df = pd.read_sql("""select * from {0} where created_time > '{1}'""".format(args.type, args.date),engine)
+raw_df = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_time <= '{2}'""".format(args.type, args.start_date, args.end_date),engine)
 
 #find date of most recent_comment
 relevant_pages = raw_df[raw_df['page'].isin(page_ids)]
@@ -111,14 +112,14 @@ for i,page in enumerate(page_wordclouds):
     plt.imshow(page_wordclouds[page], interpolation='bilinear')
     plt.axis("off")
     plt.title('{0} Word Cloud'.format(page), fontsize = 20)
-    plt.savefig('./wordclouds/{0}_{1}_wordcloud_{2}_to_{3}.png'.format(page,args.type,args.date,most_recent_date))
+    plt.savefig('./wordclouds/{0}_{1}_wordcloud_{2}_to_{3}.png'.format(page,args.type,args.start_date,args.end_date))
 
 
 plt.figure(len(page_ids)+1)
 plt.imshow(overall_wordcloud, interpolation='bilinear')
 plt.axis("off")
-plt.title("Overall {0} Word Cloud, {1} - {2}".format(args.pages.upper(), args.date, most_recent_date), fontsize = 20)
-plt.savefig('./wordclouds/overall_{0}_{1}_freq_{2}_to_{3}.png'.format(args.pages,args.type,args.date,most_recent_date))
+plt.title("Overall {0} Word Cloud, {1} - {2}".format(args.pages.upper(), args.start_date, args.end_date), fontsize = 20)
+plt.savefig('./wordclouds/overall_{0}_{1}_freq_{2}_to_{3}.png'.format(args.pages,args.type,args.start_date,args.end_date))
 
 plt.show()
 
