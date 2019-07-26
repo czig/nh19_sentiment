@@ -37,17 +37,26 @@ if args.ignore:
 print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.start_date)
 
-#add stop words
-stop_words = ["lol","READ","MORE","NEWS"]
-if args.type == 'comments':
-    #stop lemmas for comments
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+#load stop words and stop lemmas from dict meta file
+tokenize_meta_path = "./tmp/meta_fb_{0}_{1}_{2}_to_{3}.txt".format(args.type,args.pages, args.start_date, args.end_date)
+if os.path.exists(tokenize_meta_path):
+    with open(tokenize_meta_path,"r") as tokens_meta_file:
+        tokenize_args = json.load(tokens_meta_file)
+    stop_words = tokenize_args['stop_words']
+    stop_lemmas = tokenize_args['stop_lemmas']
+    allowed_pos = tokenize_args['allowed_pos']
 else:
-    #stop lemmas for posts
-    stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese"]
+    #add stop words
+    stop_words = ["lol","READ","MORE","NEWS"]
+    if args.type == 'comments':
+        #stop lemmas for comments
+        stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day"]
+    else:
+        #stop lemmas for posts
+        stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","national","guyanese"]
 
-#parts of speech
-allowed_pos = ['NOUN', 'VERB', 'PROPN']
+    #parts of speech
+    allowed_pos = ['NOUN', 'VERB', 'PROPN']
 
 #define and instantiate tokenizer
 tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=True, allowed_pos=allowed_pos, lower_token=True, bigrams=True)
