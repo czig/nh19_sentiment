@@ -1,0 +1,7 @@
+{
+    "0": {"name": "President/Parliament", "words": ""},
+    "1": {"name": "Election", "words": ""},
+    "2": {"name": "Economy", "words": ""},
+    "3": {"name": "Religion", "words": ""},
+    "4": {"name": "Police/Crime", "words": ""}
+}

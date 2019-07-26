@@ -1,7 +1,0 @@
-{
-    "0": {"name": "presidency", "words": ""},
-    "1": {"name": "election", "words": ""},
-    "2": {"name": "government/industry/finance", "words": ""},
-    "3": {"name": "religion", "words": ""},
-    "4": {"name": "police/crime", "words": ""}
-}
