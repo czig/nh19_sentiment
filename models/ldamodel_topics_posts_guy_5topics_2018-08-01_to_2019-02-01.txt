@@ -1,0 +1,7 @@
+{
+    "0": {"name": "No-Confidence Motion", "words": "0.029*\"government\" + 0.026*\"confidence\" + 0.024*\"motion\" + 0.023*\"vote\" + 0.023*\"court\" + 0.019*\"member\" + 0.018*\"confidence_motion\" + 0.015*\"persaud\" + 0.015*\"assembly\" + 0.014*\"attorney\""}, 
+    "1": {"name": "Heads of State", "words": "0.026*\"president\" + 0.025*\"minister\" + 0.021*\"government\" + 0.019*\"party\" + 0.015*\"granger\" + 0.013*\"election\" + 0.012*\"leader\" + 0.011*\"opposition\" + 0.011*\"david\" + 0.010*\"source\""}, 
+    "2": {"name": "Police/Crime", "words": "0.035*\"police\" + 0.013*\"demerara\" + 0.013*\"east\" + 0.012*\"charge\" + 0.011*\"road\" + 0.010*\"find\" + 0.010*\"murder\" + 0.010*\"yesterday\" + 0.010*\"force\" + 0.009*\"coast\""}, 
+    "3": {"name": "Education", "words": "0.030*\"school\" + 0.021*\"education\" + 0.021*\"teacher\" + 0.015*\"student\" + 0.014*\"union\" + 0.011*\"ministry\" + 0.011*\"strike\" + 0.010*\"today\" + 0.010*\"cricket\" + 0.010*\"club\""}, 
+    "4": {"name": "Ministry/Industry", "words": "0.013*\"minister\" + 0.009*\"work\" + 0.009*\"ministry\" + 0.009*\"public\" + 0.008*\"country\" + 0.008*\"region\" + 0.008*\"business\" + 0.008*\"government\" + 0.008*\"community\" + 0.008*\"service\""}
+}

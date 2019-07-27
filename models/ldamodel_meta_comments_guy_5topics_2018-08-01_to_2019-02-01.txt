@@ -1,0 +1,1 @@
+{"dictionary": "./tmp/dict_fb_comments_guy_2018-08-01_to_2019-02-01.dict", "corpus": "./tmp/corpus_fb_comments_guy_2018-08-01_to_2019-02-01.mm", "docs": "./tmp/doc_fb_comments_guy_2018-08-01_to_2019-02-01.pkl", "num_topics": 5, "iterations": 500, "update_every": 0, "num_passes": 50, "chunksize": 200000, "alpha": "auto", "beta": "auto"}

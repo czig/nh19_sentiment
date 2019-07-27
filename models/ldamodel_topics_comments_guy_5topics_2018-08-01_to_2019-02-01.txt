@@ -1,0 +1,7 @@
+{
+    "0": {"name": "Religion/Family", "words": "0.055*\"god\" + 0.028*\"family\" + 0.020*\"rip\" + 0.019*\"thank\" + 0.017*\"president\" + 0.017*\"congratulation\" + 0.014*\"help\" + 0.014*\"life\" + 0.014*\"world\" + 0.013*\"love\""}, 
+    "1": {"name": "Government/Election", "words": "0.042*\"ppp\" + 0.029*\"government\" + 0.025*\"vote\" + 0.019*\"pnc\" + 0.017*\"election\" + 0.016*\"jagdeo\" + 0.015*\"party\" + 0.012*\"power\" + 0.012*\"apnu\" + 0.010*\"president\""}, 
+    "2": {"name": "Police/Crime", "words": "0.019*\"police\" + 0.016*\"kill\" + 0.016*\"jail\" + 0.011*\"dem\" + 0.011*\"woman\" + 0.010*\"road\" + 0.008*\"life\" + 0.008*\"happen\" + 0.007*\"tell\" + 0.007*\"hear\""}, 
+    "3": {"name": "Economy", "words": "0.036*\"money\" + 0.021*\"pay\" + 0.017*\"teacher\" + 0.015*\"oil\" + 0.014*\"government\" + 0.014*\"watch\" + 0.013*\"work\" + 0.010*\"job\" + 0.010*\"crime\" + 0.010*\"minister\""}, 
+    "4": {"name": "Misc/Dialogue", "words": "0.014*\"talk\" + 0.013*\"child\" + 0.012*\"live\" + 0.012*\"khan\" + 0.011*\"news\" + 0.011*\"singh\" + 0.010*\"stop\" + 0.009*\"omg\" + 0.009*\"congrat\" + 0.008*\"school\""}
+}
