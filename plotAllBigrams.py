@@ -16,6 +16,8 @@ import string
 import math
 from sqlalchemy import create_engine
 from tokenizer import *
+import json
+from matplotlib.colors import rgb2hex
 
 #seaborn settings
 sns.set(font_scale=1.5)
@@ -155,7 +157,7 @@ for page in page_bigram_dict:
 
     #add all edges (bigrams) to graph
     for k,v in page_bigram_dict[page].items():
-        G.add_edge(k[0],k[1], weight=(v*weight_mult))
+        G.add_edge(k[0],k[1], weight=(v))
         #populate word frequency from bigrams alone
         if k[0] in node_dict.keys():
             node_dict[k[0]] += v
@@ -173,6 +175,22 @@ for page in page_bigram_dict:
     #draw graph 
     nx.draw_networkx(G,pos,font_size=16,width=3,edge_color='grey',node_size=200,node_color=list(node_dict.values()),cmap=plt.cm.plasma,with_labels=False,ax=ax)
     plt.title('{0} Bigram Diagram, {1} - {2}'.format(page, args.date, most_recent_date))
+
+    #assign color to each node based on node weight (number of bigram connections to each node)
+    color_scale = plt.cm.plasma.__copy__()
+    max_val = max(node_dict.values())
+    node_colors = {node: rgb2hex(color_scale(node_dict[node]/max_val)) for node in node_dict}
+
+    #get nodes and edges
+    cyto_dict = nx.readwrite.json_graph.cytoscape_data(G)['elements']
+    #add weight and color to each node
+    for node in cyto_dict['nodes']:
+        node['data']['weight'] = node_dict[node['data']['id']]
+        node['data']['node_color'] = node_colors[node['data']['id']]
+    #write json file to disk
+    cyto_json_path = "./bigramCharts/cyto_json_{0}_{1}_{2}_to_{3}.json".format(page, args.type, args.date, most_recent_date)
+    with open(cyto_json_path,"w") as cyto_file:
+        cyto_file.write(json.dumps(cyto_dict))
 
     #turn off grid lines and both axes
     ax.axis('off')
@@ -210,12 +228,24 @@ for k,v in all_bigram_dict.items():
 
 max_weight = max([v for v in all_bigram_dict.values()])
 fig,ax = plt.subplots(figsize=(18,14))
-pos = nx.spring_layout(G,k=max(math.log(max_weight+1,10),1))
+pos = nx.spring_layout(G,scale=100,center=[50,50],k=1)
 
 #draw graph
-nx.draw_networkx(G,pos,font_size=16,width=3,node_size=200,node_color=list(node_dict.values()),edge_color='grey',cmap=plt.cm.plasma, with_labels=False,ax=ax)
+nx.draw_networkx(G,pos=pos,font_size=16,width=3,node_size=200,node_color=list(node_dict.values()),edge_color='grey',cmap=plt.cm.plasma, with_labels=False,ax=ax)
 plt.title('Overall {0} Bigram Diagram, {1} - {2}'.format(args.pages.upper(), args.date, most_recent_date))
 
+color_scale = plt.cm.plasma.__copy__()
+max_val = max(node_dict.values())
+node_colors = {node: rgb2hex(color_scale(node_dict[node]/max_val)) for node in node_dict}
+
+cyto_dict = nx.readwrite.json_graph.cytoscape_data(G)['elements']
+for node in cyto_dict['nodes']:
+    node['data']['weight'] = node_dict[node['data']['id']]
+    node['data']['node_color'] = node_colors[node['data']['id']]
+
+cyto_json_path = "./bigramCharts/cyto_json_{0}_{1}_{2}_to_{3}.json".format(args.pages, args.type, args.date, most_recent_date)
+with open(cyto_json_path,"w") as cyto_file:
+    cyto_file.write(json.dumps(cyto_dict))
 #turn off grid lines and both axes
 ax.axis('off')
 
