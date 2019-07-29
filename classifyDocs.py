@@ -19,7 +19,7 @@ sns.set_context('talk')
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use model trained with posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
-arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy']) 
+arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy'],default = 'guy') 
 arg_parser.add_argument("--num_topics", help="Number of topics in model. Default is 10.", type=int, default=10)
 arg_parser.add_argument("--start_date", help="Start date for trained model in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
 arg_parser.add_argument("--end_date", help="End date for trained model in format YYYY-MM-DD. Default is 2019-06-22.", default="2019-06-22")
