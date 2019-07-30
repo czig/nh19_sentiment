@@ -41,8 +41,8 @@ print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.date)
 
 #stop words for both types of pages
-us_stop_words = ["Guyana","Guyanese","USA","United","States","US","U.S.","America","Military","Ambassador","Air","Force"]
-guy_stop_words = ["Guyana","Guyanese"]
+us_stop_words = []
+guy_stop_words = []
 
 #stop lemmas
 us_stop_lemmas = ["en","la","de","desde","los","eso","es"]
