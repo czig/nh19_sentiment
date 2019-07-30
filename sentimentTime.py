@@ -17,11 +17,12 @@ embassy_df = sentiment_df[sentiment_df['page']=='USEmbassyGeorgetown']
 southcom_df=sentiment_df[sentiment_df['page']=='southcom']
 nh_df=sentiment_df[sentiment_df['page']=='AFSOUTHNewHorizons']
 
-#To change between data sets
-working_df = sentiment_df
+#Set working dataframe
+working_df = embassy_df
+working_df = working_df[working_df['created_time']>'2019-01-01']
 
 #Converting and batching in weeks
-working_df.created_time = pd.to_datetime(sentiment_df.created_time)
+working_df.created_time = pd.to_datetime(working_df.created_time)
 #working_df['time_series'] = working_df['created_time'].dt.to_period('W').apply(lambda r: r.start_time)
 #working_df = working_df.set_index('created_time')
 #working_df = working_df.groupby(['time_series'], as_index = False).mean()
@@ -37,7 +38,8 @@ plot_df['created_time'] = plot_df['created_time'].dt.strftime("%Y %m %d")
 #print(plot_df)
 #plot_df.plot.scatter('created_time','compound')
 #sns.catplot(x='time_series',y='compound',data=plot_df)
-sns.catplot(x='created_time',y='compound',data=plot_df, s=10, color='blue')
+ax = sns.pointplot(x='created_time',y='compound',data=plot_df, s=10, color='blue')
+ax.grid(True)
 plt.title('Sentiment Over Time', fontsize = 28)
-plt.xticks(rotation=45)
+plt.xticks(rotation=45,ha = 'right', rotation_mode = 'anchor')
 plt.show()
