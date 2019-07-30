@@ -61,18 +61,21 @@ plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.2)
 plt.xlabel("Created Date", fontsize = 18)
 plt.ylabel("Count", fontsize = 18)
+plt.savefig("./numbers/number_over_time_{0}_{1}_{2}_to_{3}.png".format(args.type,args.pages,args.start_date,args.end_date))
+
 
 #count by page overall
 page_stats = relevant_df.groupby("page")
-plt.figure()
+plt.figure(figsize=(14,8))
 page_stats.size().sort_values(ascending=False).plot.bar()
 plt.xticks(rotation=40, ha='right', rotation_mode='anchor')
-plt.subplots_adjust(bottom=0.2)
+plt.subplots_adjust(bottom=0.3)
 plt.xlabel("Facebook Page", fontsize = 20)
 plt.ylabel("Number of {0}".format(args.type.capitalize()), fontsize = 20)
 ax = plt.gca()
 ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
-plt.title("Number of {0} Per Facebook Page".format(args.type.capitalize()), fontsize = 24)
+plt.title("Number of {0} Per Facebook Page from {1} to {2}".format(args.type.capitalize(),args.start_date,args.end_date), fontsize = 24)
+plt.savefig("./numbers/number_per_page_{0}_{1}_{2}_to_{3}.png".format(args.type,args.pages,args.start_date,args.end_date))
 
 #count per period for each page 
 time_count_page_df = relevant_df
@@ -91,5 +94,6 @@ plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.2)
 plt.xlabel("Created Date", fontsize = 18)
 plt.ylabel("Count", fontsize = 18)
+plt.savefig("./numbers/number_over_time_per_page_{0}_{1}_{2}_to_{3}.png".format(args.type,args.pages,args.start_date,args.end_date))
 
 plt.show()
