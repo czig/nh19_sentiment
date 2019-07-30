@@ -21,13 +21,17 @@ arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use model trained with posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
 arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy'],default = 'guy') 
 arg_parser.add_argument("--num_topics", help="Number of topics in model. Default is 10.", type=int, default=10)
-arg_parser.add_argument("--start_date", help="Start date for trained model in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
-arg_parser.add_argument("--end_date", help="End date for trained model in format YYYY-MM-DD. Default is 2019-06-22.", default="2019-06-22")
+arg_parser.add_argument("--start_date", help="Start date for documents and trained model in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
+arg_parser.add_argument("--end_date", help="End date for documents and trained model in format YYYY-MM-DD. Default is 2019-06-22.", default="2019-06-22")
+arg_parser.add_argument("--model", help="Name of trained model to use (if different than date range). If not included, finds model with date range")
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
 args = arg_parser.parse_args()
 
 #specify path for model to load 
-file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
+if args.model == None:
+    file_path = datapath("ldamodel_{0}_{1}_{2}topics_{3}_to_{4}".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date))
+else:
+    file_path = datapath(args.model)
 
 #create name for common dictionary
 dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}_to_{3}.dict".format(args.type,args.pages,args.start_date,args.end_date)
@@ -96,7 +100,13 @@ df = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_ti
 print('Df shape: ', df.shape)
 
 #read topic meta file to get names of topics
-meta_file_path = "./models/ldamodel_topics_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+if args.model == None:
+    meta_file_path = "./models/ldamodel_topics_{0}_{1}_{2}topics_{3}_to_{4}.txt".format(args.type,args.pages,args.num_topics, args.start_date, args.end_date)
+else:
+    model_name_list = args.model.split('_')
+    model_name_list.insert(1,'topics')
+    meta_file_path = "./models/{0}.txt".format("_".join(model_name_list))
+
 with open(meta_file_path,"r") as meta_file:
     json_topics = json.load(meta_file)
 topics = {int(topic): json_topics[topic] for topic in json_topics}
