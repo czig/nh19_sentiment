@@ -100,10 +100,10 @@ all_string = " ".join(all_tokens)
 #keep collocations to show bigrams (increases understanding) and remove plurals (bin a little better)
 page_wordclouds = {}
 for page in page_string:
-    page_wordclouds[page] = WordCloud(width=1000, height=600, background_color="white", collocations=True, normalize_plurals=True).generate(page_string[page])
+    page_wordclouds[page] = WordCloud(width=1000, height=600, background_color="white", collocations=False, normalize_plurals=True).generate(page_string[page])
 
 #create wordcloud for overall chart
-overall_wordcloud = WordCloud(width=1000, height=600, background_color="white", collocations=True, normalize_plurals=True).generate(all_string)
+overall_wordcloud = WordCloud(width=1000, height=600, background_color="white", collocations=False, normalize_plurals=True).generate(all_string)
 
 #generate all wordclouds
 for i,page in enumerate(page_wordclouds):
