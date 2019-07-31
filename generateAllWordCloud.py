@@ -108,14 +108,14 @@ overall_wordcloud = WordCloud(width=1000, height=600, background_color="white", 
 #generate all wordclouds
 for i,page in enumerate(page_wordclouds):
     #wordcloud
-    plt.figure(i+1)
+    plt.figure(figsize=(18,14))
     plt.imshow(page_wordclouds[page], interpolation='bilinear')
     plt.axis("off")
     plt.title('{0} Word Cloud'.format(page), fontsize = 20)
     plt.savefig('./wordclouds/{0}_{1}_wordcloud_{2}_to_{3}.png'.format(page,args.type,args.start_date,args.end_date))
 
 
-plt.figure(len(page_ids)+1)
+plt.figure(figsize=(18,14))
 plt.imshow(overall_wordcloud, interpolation='bilinear')
 plt.axis("off")
 plt.title("Overall {0} Word Cloud, {1} - {2}".format(args.pages.upper(), args.start_date, args.end_date), fontsize = 20)
