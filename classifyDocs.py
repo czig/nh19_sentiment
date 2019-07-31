@@ -34,7 +34,13 @@ else:
     file_path = datapath(args.model)
 
 #create name for common dictionary
-dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}_to_{3}.dict".format(args.type,args.pages,args.start_date,args.end_date)
+if args.model == None:
+    dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}_to_{3}.dict".format(args.type,args.pages,args.start_date,args.end_date)
+    print('dictionary name: ',dictionary_name)
+else:
+    dictionary_args = args.model.split('_')
+    dictionary_name = "./tmp/dict_fb_{0}_{1}_{2}_to_{3}.dict".format(dictionary_args[1],dictionary_args[2],dictionary_args[4],dictionary_args[6])
+    print('dictionary name: ',dictionary_name)
 
 #read off input values
 if args.ignore:
@@ -44,7 +50,12 @@ print("Using %s for analysis" % args.type)
 print("Using start_date of: ",args.start_date)
 
 #load stop words and stop lemmas from dict meta file
-tokenize_meta_path = "./tmp/meta_fb_{0}_{1}_{2}_to_{3}.txt".format(args.type,args.pages, args.start_date, args.end_date)
+if args.model == None:
+    tokenize_meta_path = "./tmp/meta_fb_{0}_{1}_{2}_to_{3}.txt".format(args.type,args.pages, args.start_date, args.end_date)
+else:
+    meta_args = args.model.split('_')
+    tokenize_meta_path = "./tmp/meta_fb_{0}_{1}_{2}_to_{3}.txt".format(meta_args[1],meta_args[2], meta_args[4], meta_args[6])
+
 if os.path.exists(tokenize_meta_path):
     with open(tokenize_meta_path,"r") as tokens_meta_file:
         tokenize_args = json.load(tokens_meta_file)
@@ -134,6 +145,7 @@ for index,row in df.iterrows():
         print('%d %s classified' % (count*1000,args.type))
         count += 1
 
+#TODO: try grouping by day
 #average sentiment per time period for each topic (every week)
 time_df = df
 time_df['created_time'] = pd.to_datetime(time_df.created_time)
