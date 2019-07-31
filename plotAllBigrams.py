@@ -121,7 +121,7 @@ all_bigram_dict = {item[0]: item[1] for item in all_bigram_counts if item[1] > 1
 
 #barchart for most common bigrams
 for i,page in enumerate(page_bigram_dict):
-    plt.figure(i)
+    plt.figure(figsize=(14,10))
     keys = [bigram[0] + '_' + bigram[1] for bigram in page_bigram_dict[page].keys()]
     plt.bar(keys,list(page_bigram_dict[page].values()))
     plt.xticks(rotation=40, ha='right')
@@ -134,7 +134,7 @@ for i,page in enumerate(page_bigram_dict):
     plt.savefig('./bigramCharts/{0}_{1}_bigramBar_{2}_to_{3}.png'.format(page,args.type,args.date,most_recent_date))
 
 #barchart for most common bigrams overall
-plt.figure(len(page_bigram_dict))
+plt.figure(figsize=(14,10))
 all_keys = [bigram[0] + '_' + bigram[1] for bigram in all_bigram_dict.keys()]
 plt.bar(all_keys,list(all_bigram_dict.values()))
 plt.xticks(rotation=40, ha='right')
