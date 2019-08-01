@@ -16,6 +16,8 @@ import string
 import math
 from sqlalchemy import create_engine
 from tokenizer import *
+import json
+from matplotlib.colors import rgb2hex
 
 #seaborn settings
 sns.set(font_scale=1.5)
@@ -27,7 +29,7 @@ arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
 arg_parser.add_argument("--pages", help="Specify whether to use all facebook pages, only US facebook pages, or only Guyana faebook pages. Default is us", choices=['all','us','guy'], default='us')
 arg_parser.add_argument("--date", help="Earliest date for posts/comments in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
-arg_parser.add_argument("--num_trigrams", help="Number of trigrams to show in barchart and graph. Default is 40.", type=int, default=30)
+arg_parser.add_argument("--num_trigrams", help="Number of trigrams to show in barchart and graph. Default is 30.", type=int, default=30)
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
 args = arg_parser.parse_args()
 
