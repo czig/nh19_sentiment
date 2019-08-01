@@ -56,13 +56,16 @@ elif args.pages == 'guy':
 
 #add stop words
 stop_words = ["lol","READ","MORE","NEWS"]
-stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad","ppl","way","yuh","be","guy","comment","lol","news"]
+stop_lemmas = ["say", "man", "people","know","time","need","want","go","get","year","word","guyana","like","good","thing","come","let","think","look","right","day","guyanese","country","sad","ppl","way","yuh","be","guy","comment","lol","news","government","ppp","pnc"]
 
 #parts of speech
 allowed_pos = ['NOUN', 'VERB', 'PROPN']
 
 #define and instantiate tokenizer
-tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=True, allowed_pos=allowed_pos, lower_token=True, bigrams=True)
+remove_unicode = True
+lower_token = True
+bigrams = True
+tokenizer_inst = Tokenizer(stop_words=stop_words, stop_lemmas=stop_lemmas, remove_unicode=remove_unicode, allowed_pos=allowed_pos, lower_token=lower_token, bigrams=bigrams)
 
 #read SQL database 
 engine = create_engine('sqlite:///./nh19_fb.db')
