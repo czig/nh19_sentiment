@@ -5,4 +5,5 @@ access_token.txt
 tmp/
 lda_vis/
 bigramCharts/
+trigramCharts/
 __pycache__/
