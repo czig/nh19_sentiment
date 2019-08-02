@@ -24,6 +24,7 @@ arg_parser.add_argument("--end_date", help="End date for documents and trained m
 arg_parser.add_argument("--name", help="Name of concept to track sentiment for", type=str, required=True)
 arg_parser.add_argument("--words", help="Words that constitute the concept (separate each word with a space, no hard brackets, no quotes)", type=str, nargs="+", required=True)
 arg_parser.add_argument("--ignore", help="Ignore warnings", action="store_true")
+arg_parser.add_argument("--show_comments", help="If included, print all comments to terminal after filtering", action="store_true")
 args = arg_parser.parse_args()
 
 #read off input values
@@ -51,6 +52,9 @@ df = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_ti
 filtered_df = df[df['message'].str.contains('|'.join(args.words),case=False,na=False)].copy()
 
 print('Shape of filtered dataframe: ',filtered_df.shape)
+if args.show_comments:
+    pd.set_option('display.max_colwidth',-1)
+    print(filtered_df['message'])
 
 #average sentiment per time period for each topic (every week)
 time_df = filtered_df.copy()
