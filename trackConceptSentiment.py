@@ -3,6 +3,7 @@ import pandas as pd
 import gensim
 import sys
 import os
+import re
 from sqlalchemy import create_engine
 from tokenizer import *
 import warnings
@@ -47,12 +48,12 @@ elif args.pages == 'all':
 df = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_time <= '{2}'""".format(args.type, args.start_date, args.end_date), engine)
 
 
-filtered_df = df[df['message'].str.contains('|'.join(args.words),case=False,na=False)]
+filtered_df = df[df['message'].str.contains('|'.join(args.words),case=False,na=False)].copy()
 
 print('Shape of filtered dataframe: ',filtered_df.shape)
 
 #average sentiment per time period for each topic (every week)
-time_df = filtered_df
+time_df = filtered_df.copy()
 time_df['created_time'] = pd.to_datetime(time_df.created_time)
 time_df = time_df.groupby([pd.Grouper(key='created_time', freq='W-MON')]).mean().reset_index()
 time_df = time_df.fillna(0)
@@ -71,7 +72,7 @@ plt.xlabel("Created Date",fontsize=18)
 plt.ylabel("Average Sentiment Score", fontsize = 18)
 
 #sentiment variance per time period for each topic (every week)
-time_std_df = filtered_df
+time_std_df = filtered_df.copy()
 time_std_df['created_time'] = pd.to_datetime(time_std_df.created_time)
 time_std_df = time_std_df.groupby([pd.Grouper(key='created_time', freq='W-MON')]).std().reset_index()
 time_std_df = time_std_df.fillna(0)
@@ -87,5 +88,23 @@ plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
 plt.subplots_adjust(bottom=0.2)
 plt.xlabel("Created Date", fontsize = 18)
 plt.ylabel("Std. Dev. of Sentiment Score", fontsize = 18)
+
+#count per period for each topic (every week)
+time_count_df = filtered_df.copy()
+time_count_df['created_time'] = pd.to_datetime(time_count_df.created_time)
+time_count_df = time_count_df.groupby([pd.Grouper(key='created_time', freq='W-MON')]).size().reset_index(name='counts')
+time_count_df = time_count_df.fillna(0)
+time_count_df['created_time'] = time_count_df['created_time'].dt.strftime("%Y-%m-%d")
+print('count of topic over time dataframe')
+print(time_count_df.head())
+plt.figure()
+ax = sns.pointplot(x='created_time',y='counts', ci=None, data=time_count_df, color='blue')
+ax.grid(True)
+ax.tick_params(axis = 'both', which = 'major', labelsize = 14)
+plt.title('Number of {0} for {1} Over Time'.format(args.type.capitalize(),args.name), fontsize=24)
+plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
+plt.subplots_adjust(bottom=0.2)
+plt.xlabel("Created Date", fontsize = 18)
+plt.ylabel("Count", fontsize = 18)
 
 plt.show()
