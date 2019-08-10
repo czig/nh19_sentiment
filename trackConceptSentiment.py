@@ -18,7 +18,7 @@ sns.set_context('talk')
 import argparse
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--type", help="Specify whether to use model trained with posts or comments. Default is comments.", choices=['posts','comments'], default='comments')
-arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy'],default = 'guy') 
+arg_parser.add_argument("--pages", help="Group of pages to use. Default is guy.", choices=['all','nh','guy','embassy'],default = 'guy') 
 arg_parser.add_argument("--start_date", help="Start date for documents and trained model in format YYYY-MM-DD. Default is 2019-04-01.", default="2019-04-01")
 arg_parser.add_argument("--end_date", help="End date for documents and trained model in format YYYY-MM-DD. Default is 2019-06-22.", default="2019-06-22")
 arg_parser.add_argument("--name", help="Name of concept to track sentiment for", type=str, required=True)
@@ -44,17 +44,27 @@ elif args.pages == 'nh':
     engine = create_engine('sqlite:///./nh19_sentiment.db')
 elif args.pages == 'all':
     engine = create_engine('sqlite:///./raw_sentiment.db')
+elif args.pages == 'embassy':
+    engine = create_engine('sqlite:///./raw_sentiment.db')
+
 
 #select all comments/posts
 df = pd.read_sql("""select * from {0} where created_time >= '{1}' and created_time <= '{2}'""".format(args.type, args.start_date, args.end_date), engine)
 
-
-filtered_df = df[df['message'].str.contains('|'.join(args.words),case=False,na=False)].copy()
+if args.type =='comments':
+    filtered_df = df[(df['message'].str.contains('|'.join(args.words),case=False,na=False))|(df['post_message'].str.contains('|'.join(args.words),case = False, na=False))].copy()
+elif args.type =='posts':
+    filtered_df = df[(df['message'].str.contains('|'.join(args.words),case = False, na=False))].copy()
+    print(filtered_df)
+if args.pages == 'embassy':
+    filtered_df = filtered_df[filtered_df['page'] == 'USEmbassyGeorgetown'].copy()
 
 print('Shape of filtered dataframe: ',filtered_df.shape)
+
 if args.show_comments:
     pd.set_option('display.max_colwidth',-1)
     print(filtered_df['message'])
+    print(filtered_df['created_time'])
 
 #average sentiment per time period for each topic (every week)
 time_df = filtered_df.copy()
