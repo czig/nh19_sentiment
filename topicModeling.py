@@ -110,7 +110,7 @@ else:
 
     #create and filter dictionary and create and bag of words (corpus) for lda
     dictionary = corpora.Dictionary(docs_list)
-    dictionary.filter_extremes(no_below=20, no_above=0.5)
+    dictionary.filter_extremes(no_below=20, no_above=0.2)
     corpus = [dictionary.doc2bow(doc) for doc in docs_list]
     #save for later
     dictionary.save(dictionary_name)
