@@ -111,13 +111,30 @@ for page in page_comments:
     bigram_count = collections.Counter(bigrams).most_common(args.num_bigrams)
     #make dictionary with bigram as key and count as value; only keep bigrams that appear more than once
     bigram_dict = {item[0]: item[1] for item in bigram_count if item[1] > 1}
-    page_bigram_dict[page] = bigram_dict
+    unique_bigram_dict = {}
+    #combine forward and reverse bigrams
+    for bigram in bigram_dict:
+        reverse_bigram = (bigram[1], bigram[0])
+        if reverse_bigram in unique_bigram_dict.keys():
+            unique_bigram_dict[reverse_bigram] += bigram_dict[bigram]
+        else:
+            unique_bigram_dict[bigram] = bigram_dict[bigram]
+        
+    page_bigram_dict[page] = unique_bigram_dict
 
 #get bigram counts for overall chart
 all_tokens = [token for page in page_tokens for token in page_tokens[page]]
 all_bigrams = list(nltk.bigrams(all_tokens))
 all_bigram_counts = collections.Counter(all_bigrams).most_common(args.num_bigrams)
 all_bigram_dict = {item[0]: item[1] for item in all_bigram_counts if item[1] > 1}
+all_unique_bigram_dict = {}
+#combine forward and reverse bigrams
+for bigram in all_bigram_dict:
+    reverse_bigram = (bigram[1], bigram[0])
+    if reverse_bigram in all_unique_bigram_dict.keys():
+        all_unique_bigram_dict[reverse_bigram] += all_bigram_dict[bigram]
+    else:
+        all_unique_bigram_dict[bigram] = all_bigram_dict[bigram]
 
 #barchart for most common bigrams
 for i,page in enumerate(page_bigram_dict):
@@ -135,8 +152,8 @@ for i,page in enumerate(page_bigram_dict):
 
 #barchart for most common bigrams overall
 plt.figure(figsize=(14,10))
-all_keys = [bigram[0] + '_' + bigram[1] for bigram in all_bigram_dict.keys()]
-plt.bar(all_keys,list(all_bigram_dict.values()))
+all_keys = [bigram[0] + '_' + bigram[1] for bigram in all_unique_bigram_dict.keys()]
+plt.bar(all_keys,list(all_unique_bigram_dict.values()))
 plt.xticks(rotation=40, ha='right')
 plt.subplots_adjust(bottom=0.4)
 plt.xlabel("Bigram")
@@ -154,19 +171,35 @@ weight_mult = args.num_bigrams/scale_factor
 for page in page_bigram_dict:
     G = nx.Graph()
     node_dict = {} 
+    edge_list = []
+    if page == 'USEmbassyGeorgetown':
+        print(page_bigram_dict[page])
 
     #add all edges (bigrams) to graph
     for k,v in page_bigram_dict[page].items():
         G.add_edge(k[0],k[1], weight=(v))
         #populate word frequency from bigrams alone
-        if k[0] in node_dict.keys():
-            node_dict[k[0]] += v
-        else:
-            node_dict[k[0]] = v
-        if k[1] in node_dict.keys():
-            node_dict[k[1]] += v
-        else:
-            node_dict[k[1]] = v
+        if k not in edge_list:
+            if k[0] in node_dict.keys():
+                node_dict[k[0]] += v
+            else:
+                node_dict[k[0]] = v
+            if k[1] in node_dict.keys():
+                node_dict[k[1]] += v
+            else:
+                node_dict[k[1]] = v
+
+            edge_list.append((k[0],k[1]))
+            edge_list.append((k[1],k[0]))
+
+        if page == 'USEmbassyGeorgetown':
+            print('bigram and value: ',k,v)
+            print(node_dict)
+
+    if page == 'USEmbassyGeorgetown':
+        print(list(G.nodes(data=True)))
+        print(list(G.edges(data=True)))
+
 
     max_weight = max([v for v in page_bigram_dict[page].values()])
     fig,ax = plt.subplots(figsize=(18,14))
@@ -215,7 +248,7 @@ for page in page_bigram_dict:
 G = nx.Graph()
 node_dict = {} 
 
-for k,v in all_bigram_dict.items():
+for k,v in all_unique_bigram_dict.items():
     G.add_edge(k[0],k[1], weight=(v))
     if k[0] in node_dict.keys():
         node_dict[k[0]] += v
@@ -226,7 +259,7 @@ for k,v in all_bigram_dict.items():
     else:
         node_dict[k[1]] = v
 
-max_weight = max([v for v in all_bigram_dict.values()])
+max_weight = max([v for v in all_unique_bigram_dict.values()])
 fig,ax = plt.subplots(figsize=(18,14))
 pos = nx.spring_layout(G,scale=100,center=[50,50],k=1)
 
